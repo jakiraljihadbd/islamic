@@ -1,0 +1,297 @@
+IslamicZone — Flutter Conversion Worklist
+==========================================
+সর্বশেষ আপডেট: 7.2b সম্পূর্ণ শেষ — ফুল ট্যাপ+কালার সুইচ লজিক বসানো হয়েছে (নিচে দেখুন)। এই মুহূর্তে গ্রুপ ৭-৮ সহ সব লিস্টেড sub-task শেষ; বাকি আছে শুধু ঐচ্ছিক 8.4 ("কুরআনের দোয়া" ক্যাটাগরি)।
+
+7.2b বিস্তারিত (এই সেশনে যা হয়েছে):
+- lib/widgets/prayer_flower_widget.dart StatelessWidget থেকে StatefulWidget-এ রূপান্তরিত।
+  PrayerTimeService.calculate() দিয়ে real ৬টা নামাজের সময় আনা হয় (widget.lat/lng থেকে,
+  ডিফল্ট ঢাকা ফলব্যাক) — original Java এর হার্ডকোড করা ঘন্টা-থ্রেশহোল্ড (calcActiveIndex)
+  এর বদলে real সময় দিয়েই "এখন কোন ওয়াক্ত চলছে" (_activeIndex) বের করা হয়, কারণ গ্রুপ ১
+  এ ইতিমধ্যে real prayer times যোগ হয়ে গেছে — হার্ডকোড রিগ্রেশন হতো।
+- পাপড়িতে ট্যাপ করলে (_onPetalTapped): সংশ্লিষ্ট ওয়াক্তের img_flower_{name}_blue.png এ
+  বদলায় AnimatedSwitcher দিয়ে (RotationTransition+ScaleTransition — original এর
+  spinToFlower() rotationBy(180)+scale(0.92→1) অ্যানিমেশনের হুবহু সমতুল্য), SnackBar এ
+  নাম+সময় দেখায় (original এ Toast ছিল, Flutter এ SnackBar সমতুল্য), ২৫০০ms পর Timer দিয়ে
+  আবার active ওয়াক্তের green ফুলে ফিরে আসে (revertRunnable এর সমতুল্য)।
+- lib/theme/app_colors.dart এ AppColors.petalActiveGradient যোগ হয়েছে (bg_petal_active.xml
+  এর হুবহু কপি — oval, angle 135° bottomRight→topLeft, success→primary_variant)। active/
+  tapped পাপড়ির circle background এখন এই গ্রেডিয়েন্ট, বাকিগুলো আগের নিউট্রাল
+  primary@alpha0.1। পাপড়ির টেক্সট কালারও active হলে primary, না হলে onSurface
+  (original এর highlightLabel()/setPetalTextColor() এর সমতুল্য)।
+- home_screen.dart এ কোনো পরিবর্তন লাগেনি — PrayerFlowerWidget() আগে থেকেই বসানো ছিল,
+  ইন্টারফেস (lat/lng optional params, ডিফল্ট ঢাকা) অপরিবর্তিত রাখা হয়েছে।
+- সব দরকারি img_flower_*_green/blue.png অ্যাসেট আগে থেকেই assets/images/flower/ এ ছিল
+  (7.2a এ কপি করা), pubspec.yaml এ assets/images/ আগে থেকেই রেজিস্টার — নতুন এন্ট্রি লাগেনি।
+
+7.5 বিস্তারিত (এই সেশনে যা হয়েছে):
+- design_reference/android_original/res/ এ গ্রেপ করে পাওয়া গেছে bg_header_gradient শুধু
+  fragment_home.xml আর fragment_quran.xml এ ব্যবহার হতো। bg_icon_circle আর bg_petal_active
+  কোনো layout xml বা java ফাইলে রেফারেন্স করা ছিল না (orphaned drawable) — তাই এদের বসানো
+  হয়েছে অনুমান ভিত্তিতে যেখানে ভিজ্যুয়ালি মানানসই (নিচে দেখুন), সরাসরি res রেফারেন্স মিলিয়ে না।
+- lib/theme/app_colors.dart এ যোগ হয়েছে: AppColors.headerGradient (bg_header_gradient এর
+  হুবহু কপি — angle 135°/primary_variant→primary→primary_dark, bottomRight→topLeft হিসেবে
+  রূপান্তরিত) এবং AppColors.iconCircleBackground (#E8F5E9, bg_icon_circle এর সলিড কালার)।
+- lib/screens/home_screen.dart: header Container এর ২-কালার গ্রেডিয়েন্ট বদলে headerGradient
+  (৩-কালার, আসল XML এর সাথে হুবহু) বসানো হয়েছে। quick-action আইকনগুলোর CircleAvatar এর
+  ব্যাকগ্রাউন্ড (আগে primary@alpha0.1 ছিল) বদলে iconCircleBackground বসানো হয়েছে।
+- lib/screens/quran_screen.dart: প্লেইন AppBar এ flexibleSpace দিয়ে headerGradient যোগ করা
+  হয়েছে (মূল fragment_quran.xml এর হেডার কার্ডে এই গ্রেডিয়েন্ট ছিল)। সূরা লিস্টের leading
+  CircleAvatar এও iconCircleBackground বসানো হয়েছে।
+- বাদ পড়েছে ইচ্ছাকৃতভাবে: fragment_quran.xml এর হেডারে থাকা "কুরআন পড়ুন" বাটন আর subtitle
+  ("১১৪ টি সূরা") টেক্সট — এগুলো নতুন ফিচার/কন্টেন্ট যোগ করা হয়ে যেত, যা 7.5 এর স্কোপ
+  (শুধু ব্যাকগ্রাউন্ড শেপ/গ্রেডিয়েন্ট) এর বাইরে। চাইলে আলাদা sub-task হিসেবে যোগ করা যাবে।
+- bg_petal_active.xml (oval গ্রেডিয়েন্ট, success→primary_variant) ইচ্ছাকৃতভাবে বসানো হয়নি —
+  এটা ফুলের "active petal" স্টেট বোঝায়, যা 7.2b (tap+color switch logic) এর অংশ, যেটা এখনো
+  বাকি আছে। prayer_flower_widget.dart এখনো static।
+মূল Java/XML প্রজেক্টের res+java এই zip এর design_reference/android_original/ এ কপি করা
+আছে, তাই গ্রুপ ৭-৮ এর জন্য আলাদা java/xml zip লাগবে না।
+
+╔══════════════════════════════════════════════════════════════╗
+║  AI-এর জন্য নির্দেশনা (এই zip নিয়ে কাজ করা প্রতিটা AI পড়বে)   ║
+╚══════════════════════════════════════════════════════════════╝
+
+এটা একটা মাল্টি-সেশন প্রজেক্ট — ফ্রি-টায়ার AI দিয়ে ধাপে ধাপে করা হচ্ছে,
+তাই প্রতি সেশনে অল্প কাজ, বারবার zip আপডেট। তুমি (এই zip পড়া AI) নিচের
+নিয়মগুলো মানবে:
+
+1. নিচে "যা সম্পন্ন হয়েছে" আর "যা এখনো বাকি" — দুটো লিস্ট আছে। বাকি লিস্টে
+   sub-task নাম্বার দেওয়া (যেমন 1.1, 1.2...)। **শুধু একটা sub-task** এই
+   সেশনে সম্পূর্ণ করবে, পুরো গ্রুপ না, একসাথে কয়েকটাও না।
+
+2. কাজ শুরুর আগে ইউজারকে বলে দাও ঠিক কোন sub-task নিয়ে কাজ করছ (যদি ইউজার
+   নিজে নাম্বার বলে না দেয়, লিস্টের সবচেয়ে উপরের বাকি sub-task টা ধরবে) —
+   এটাও এক লাইনে বলবে, এর জন্য প্রশ্ন করে সময় নষ্ট করবে না, নিজে বুঝে
+   সিদ্ধান্ত নিয়ে সরাসরি কাজ শুরু করবে।
+
+3. **সবসময় সজাগ থাকবে মেসেজ/লিমিট কতটুকু ব্যবহার হয়ে গেছে তার উপর।** কাজ
+   সম্পূর্ণ শেষ হোক বা না হোক — যখনই তোমার মনে হবে লিমিটের প্রায় ৮৫-৯০%
+   ব্যবহার হয়ে গেছে (কথোপকথন অনেক লম্বা হয়ে গেছে, বা প্ল্যাটফর্ম কোনো
+   সতর্কতা দেখাচ্ছে), **তখনই সাথে সাথে থামবে** — বাকি অংশ শেষ করার চেষ্টা
+   না করে যতটুকু হয়েছে ততটুকু নিয়েই এগিয়ে যাও:
+   - এই worklist.txt আপডেট করো: sub-task সম্পূর্ণ শেষ হলে "যা সম্পন্ন
+     হয়েছে"-তে নিয়ে যাও। আংশিক হলে, ঠিক কতটুকু কোড লেখা হলো, কোন
+     ফাইলে, ঠিক কোথায় থেমেছ, পরের বার কী দিয়ে শুরু করতে হবে — এইটুকু
+     স্পষ্ট করে ২-৩ লাইনে লিখো (যেমন: "1.2 আংশিক — prayer_time_service.dart
+     ফাইল বানানো হয়েছে, calculateTimes() ফাংশনের কাঠামো আছে কিন্তু
+     ভেতরের হিসাব এখনো বসানো হয়নি")
+   - "সর্বশেষ আপডেট" লাইনে লিখো: "এতটুকু করলাম — [যা করা হলো ১ লাইনে]।
+     পরের ধাপ: [ঠিক কী করতে হবে]"
+   - সাথে সাথে প্রজেক্ট zip করে ডাউনলোড লিংক দাও, আর কিছু করতে যেও না
+
+4. sub-task পুরোপুরি শেষ হলে (লিমিট শেষ হওয়ার আগেই) — একইভাবে worklist.txt
+   আপডেট করো ("যা সম্পন্ন হয়েছে"-তে নিয়ে যাও) এবং zip করে দাও।
+
+5. পুরো প্রজেক্ট ফোল্ডার (এই আপডেট করা worklist.txt সহ) zip করে ইউজারকে
+   ডাউনলোড লিংক দাও। **শুধু এই zip টাই** পরের সেশনে আপলোড করলে যথেষ্ট —
+   আলাদা কোনো প্রম্পট মনে রাখা লাগবে না, কারণ এই ফাইলেই সব নির্দেশনা আছে।
+
+6. কোড স্টাইল/কনস্ট্রেইন্ট (নিচে "গুরুত্বপূর্ণ নোট"-এ বিস্তারিত) না পড়ে
+   কোড লিখবে না — বিশেষ করে প্যাকেজ নাম, রঙ স্কিম, বাংলা টেক্সট।
+
+7. **কথা কম, কাজ বেশি।** লম্বা ব্যাখ্যা, ভূমিকা, বা "আমি এখন এই কাজটা করব"
+   টাইপের বিস্তারিত narration লিখবে না। সরাসরি কোড লেখা শুরু করবে। জবাবে
+   শুধু: (ক) কোন sub-task করলে — ১ লাইনে, (খ) zip ফাইল, (গ) worklist.txt
+   এ কী লেখা হলো তার ১-২ লাইন সারমর্ম। এর বেশি লেখা লাগবে না।
+
+8. জবাবের শেষে ছোট করে বলবে: এই সেশনে কী করলে (বা লিমিটের কারণে থেমে
+   গেলে ঠিক কতটুকু), আর পরের সেশনে ইউজার শুধু এই নতুন zip আপলোড করলেই
+   (কোনো প্রম্পট টাইপ না করেই) পরের AI বুঝে যাবে কী করতে হবে — এটা
+   কনফার্ম করবে।
+
+
+
+=== যা সম্পন্ন হয়েছে ===
+[✓] Flutter প্রজেক্ট স্ট্রাকচার (lib/screens, lib/theme, lib/widgets)
+[✓] pubspec.yaml — dependencies: flutter_compass, geolocator, permission_handler,
+    syncfusion_flutter_pdfviewer, shared_preferences
+[✓] থিম/রঙ (lib/theme/app_colors.dart, app_theme.dart) — মূল colors.xml/themes.xml থেকে হুবহু পোর্ট
+[✓] ৫টা কাস্টম ফন্ট assets/fonts/ এ কপি করা এবং pubspec.yaml এ রেজিস্টার করা
+[✓] RootShell (lib/widgets/root_shell.dart) — বটম নেভিগেশন, ৫টা ট্যাব (হোম/কুরআন/নামাজ/দোয়া/আরো)
+[✓] HomeScreen — গ্রিটিং হেডার, পরবর্তী নামাজ কার্ড (placeholder time), quick actions গ্রিড (৮টা)
+[✓] QuranScreen — সূরা লিস্ট (placeholder ১-১০), ট্যাপ করলে PDF viewer খোলে
+[✓] QuranPdfScreen — Syncfusion PDF viewer দিয়ে বান্ডেল quran.pdf দেখায় (real, কার্যকর)
+[✓] PrayerScreen — ৬টা নামাজের লিস্ট UI (placeholder সময়)
+[✓] DuaScreen — ৬টা ক্যাটাগরি লিস্ট (ট্যাপে কিছু হয় না এখনো)
+[✓] MoreScreen — মেনু লিস্ট, তাসবিহ/কিবলাতে নেভিগেট করে
+[✓] TasbihScreen — সম্পূর্ণ কার্যকর: counter, target chip (33/99/100), reset, haptic feedback
+[✓] QiblaScreen — সম্পূর্ণ কার্যকর: flutter_compass sensor + geolocator GPS +
+    Kaaba bearing formula (মূল QiblaActivity.java থেকে হুবহু পোর্ট করা)
+[✓] .github/workflows/build.yml — push এ auto APK build:
+    - android/ ফোল্ডার auto-scaffold (`flutter create --platforms=android`)
+    - applicationId → com.islamiczone.org সেট করা
+    - প্রয়োজনীয় permission (location, vibrate, notification) auto-add
+    - flutter build apk --release → artifact আপলোড
+[✓] 1.1 pubspec.yaml এ `adhan: ^2.0.0` প্যাকেজ যোগ করা হয়েছে (dependencies এ shared_preferences এর পরে)
+[✓] 1.2 lib/services/prayer_time_service.dart বানানো — PrayerTimeService.calculate() (৬টা সময়, Karachi method + Shafi madhab)
+    আর PrayerTimeService.nextPrayer() (পরবর্তী নামাজ + সময় বের করে)। DailyPrayerTimes মডেল ক্লাসও এই ফাইলেই।
+    এখনো কোনো UI-তে জোড়া লাগানো হয়নি।
+[✓] 1.3 PrayerScreen-এ PrayerTimeService জোড়া লাগানো — geolocator দিয়ে বর্তমান lat/lng (না পেলে ঢাকা ফলব্যাক),
+    ৬টা সময় real ফরম্যাটে (h:mm AM/PM) দেখায়, loading অবস্থায় spinner।
+[✓] 1.4 HomeScreen-এর "পরবর্তী নামাজ" কার্ড (_NextPrayerCard) StatefulWidget বানানো —
+    PrayerTimeService.nextPrayer() দিয়ে পরবর্তী নামাজের নাম+সময় দেখায়, প্রতি ৩০ সেকেন্ডে
+    Timer.periodic দিয়ে countdown (HH:MM বাকি) রিফ্রেশ হয়।
+[✓] 2.1 assets/data/surahs.json বানানো — ১১৪টা সূরার number, nameArabic, nameBengali, ayahs, revelationType
+[✓] 2.2 lib/models/surah.dart — Surah মডেল ক্লাস + SurahRepository.loadAll() (rootBundle দিয়ে json লোড, cache করে রাখে)
+[✓] 2.3 QuranScreen এখন placeholder এর বদলে real ১১৪টা সূরা দেখায় (নাম্বার, বাংলা+আরবি নাম, আয়াত সংখ্যা, মক্কী/মাদানী)
+[✓] 2.4 surahIndex → PDF page mapping — assets/data/surah_pages.json বানানো হয়েছে।
+    পদ্ধতি: quran.pdf (৫৬৯ পেজ) এর প্রতিটা পেজ রেন্ডার করে সূরার ডেকোরেটেড টাইটেল-ব্যানার
+    (নীল/সোনালি রঙ প্যাটার্ন) কালার-হিউরিস্টিক দিয়ে ডিটেক্ট করা হয়েছে। সূরা ১-৭৭ এর পেজ
+    নাম্বার নির্ভুলভাবে শনাক্ত (প্রতিটা আলাদা পেজে শুরু হয়)। সূরা ৭৮-১১৪ (জুয আম্মার ছোট
+    সূরাগুলো, একই পেজে একাধিক সূরা শুরু হতে পারে) — আয়াত-সংখ্যা অনুপাতে আনুমানিক করা হয়েছে,
+    JSON এ "estimated": true ফ্ল্যাগ দেওয়া আছে। QuranScreen-এ এই সূরাগুলোর subtitle-এ
+    "পেজ আনুমানিক" দেখায়। lib/models/surah.dart এ pdfPage/pageEstimated ফিল্ড যোগ,
+    QuranPdfScreen এখন PdfViewerController দিয়ে jumpToPage সাপোর্ট করে।
+    ভবিষ্যতে চাইলে সূরা ৭৮-১১৪ এর পেজ নাম্বার ম্যানুয়ালি ভেরিফাই/সংশোধন করা যেতে পারে (আলাদা sub-task)।
+[✓] 3.1+3.2 assets/data/duas.json বানানো — ৬টা ক্যাটাগরিই (সকাল-সন্ধ্যা, খাবার, ঘুম, সফর, ইস্তিগফার, দরুদ)
+    সম্পূর্ণ, প্রতিটাতে ২-৩টা করে দোয়া (title, arabic, uccharon, bengali, reference ফিল্ড সহ)।
+[✓] 3.3  lib/models/dua.dart (Dua + DuaCategory মডেল, DuaRepository.loadAll()) এবং
+    lib/screens/dua_detail_screen.dart বানানো — কার্ড আকারে আরবি (RTL, Arabic ফন্ট) + উচ্চারণ +
+    বাংলা অনুবাদ + রেফারেন্স দেখায়।
+[✓] 3.4  DuaScreen এখন StatefulWidget, DuaRepository.loadAll() দিয়ে লোড করে, ক্যাটাগরিতে ট্যাপ করলে
+    DuaDetailScreen এ (category পাস করে) নেভিগেট করে। গ্রুপ ৩ সম্পূর্ণ শেষ।
+[✓] 4.1  assets/data/verses.json (৭টা আয়াত) + assets/data/hadith.json (৭টা হাদিস) বানানো —
+    প্রতিটাতে id, arabic, bengali, reference ফিল্ড।
+[✓] 4.2  lib/models/daily_content.dart বানানো — VerseHadith মডেল + DailyContentRepository
+    (day-of-year % length দিয়ে deterministic fix আয়াত/হাদিস বেছে দেয়, সারাদিন একই থাকে)।
+    HomeScreen-এ placeholder কার্ডের জায়গায় _DailyVerseHadithCard (StatefulWidget) বসানো হয়েছে,
+    যা আজকের আয়াত + আজকের হাদিস দুটোই আরবি+বাংলা সহ দেখায়।
+[✓] 4.3  HomeScreen-এ _DailyGoalsCard যোগ করা হয়েছে ("দৈনিক লক্ষ্য" সেকশন) — ৪টা static আইটেম
+    (৫ ওয়াক্ত নামাজ, কুরআন তিলাওয়াত, তাসবিহ, সকাল-সন্ধ্যার দোয়া) done/target কাউন্ট সহ,
+    ডেটা এখনো hardcoded — persist করা হয়নি (এটা গ্রুপ ৬.৪-এর কাজ, shared_preferences দিয়ে)।
+[✓] 5.1  assets/data/names_of_allah.json (৯৯টা নাম: number, arabic, transliteration, bengali) +
+    lib/screens/names_screen.dart বানানো — লিস্ট আকারে আরবি (RTL) + উচ্চারণ + অর্থ দেখায়।
+[✓] 5.2  lib/screens/hijri_calendar_screen.dart — কুয়েতি অ্যালগরিদম দিয়ে গ্রেগরিয়ান→হিজরি রূপান্তর
+    (কোনো এক্সটার্নাল প্যাকেজ ছাড়াই, pubspec-এ কিছু যোগ করা লাগেনি)। আজকের তারিখ + DatePicker
+    দিয়ে অন্য তারিখ বাছাই করার সুবিধা আছে।
+[✓] 5.3  lib/screens/zakat_calculator_screen.dart — নগদ/স্বর্ণ/ব্যবসায়িক সম্পদ/ঋণ/নিসাব ইনপুট
+    নিয়ে নিসাবের সাথে তুলনা করে ২.৫% যাকাত হিসাব করে দেখায়।
+[✓] 5.4  lib/screens/settings_screen.dart — ডার্ক মোড টগল (SwitchListTile), আপাতত UI-only/লোকাল
+    state, পুরো অ্যাপে থিম প্রয়োগ করা হয়নি (সেটা 6.3-এর কাজ)।
+[✓] 5.5  lib/screens/about_screen.dart — অ্যাপ আইকন/নাম/ভার্সন, সংক্ষিপ্ত পরিচিতি, ফিচার লিস্ট।
+    সবগুলো MoreScreen-এ (lib/screens/more_screen.dart) ওয়্যার করা হয়েছে (আগে placeholder ছিল)।
+    বোনাস: HomeScreen-এর quick-actions গ্রিডের "যাকাত" বাটনও এখন ZakatCalculatorScreen-এ নেভিগেট করে।
+[✓] 6.1  flutter_launcher_icons (^0.14.1) pubspec.yaml dev_dependencies এ যোগ করা হয়েছে +
+    flutter_launcher_icons: কনফিগ ব্লক (adaptive icon সহ, background #0B6E4F)। assets/icon/icon.png
+    (1024x1024, emerald green ব্যাকগ্রাউন্ড + gold crescent-star, PIL দিয়ে প্রোগ্রামেটিক্যালি বানানো —
+    কোনো রেডিমেড লোগো ফাইল পাওয়া যায়নি তাই মূল রঙ স্কিম দিয়ে বানানো) এবং
+    assets/icon/icon_foreground.png (adaptive icon foreground, transparent bg) বানানো হয়েছে।
+    pubspec.yaml এর assets লিস্টে assets/icon/ যোগ করা হয়েছে। যেহেতু android/ ফোল্ডার repo-তে
+    কমিট করা হয় না (CI প্রতিবার generate করে), তাই .github/workflows/build.yml এ
+    `flutter pub get` এর পর, `flutter analyze`-এর আগে "dart run flutter_launcher_icons" স্টেপ
+    যোগ করা হয়েছে — যাতে প্রতি বিল্ডে android/ scaffold হওয়ার পর আইকন জেনারেট হয়।
+[✓] 6.2  flutter_native_splash (^2.4.1) pubspec.yaml dev_dependencies এ যোগ + flutter_native_splash
+    কনফিগ ব্লক (color #0B6E4F, image assets/icon/splash_logo.png, android_12 ব্লকও একই)।
+    assets/icon/splash_logo.png বানানো হয়েছে (icon_foreground.png এর মতোই — transparent bg-তে
+    gold crescent-star)। .github/workflows/build.yml এ launcher icon জেনারেশনের পরে
+    "dart run flutter_native_splash:create" স্টেপ যোগ করা হয়েছে।
+[✓] 6.3  lib/services/theme_controller.dart বানানো — ThemeController (ValueNotifier<ThemeMode>,
+    singleton), shared_preferences দিয়ে পছন্দ persist করে (key: theme_mode)। main.dart এখন
+    ValueListenableBuilder দিয়ে ThemeController.instance শোনে, themeMode হার্ডকোড না করে
+    controller-এর value ব্যবহার করে (app শুরুর আগে loadSaved() কল হয়)। SettingsScreen-এর
+    ডার্ক মোড SwitchListTile এখন সরাসরি ThemeController.instance.setDark() কল করে —
+    টগল করলেই পুরো অ্যাপে সাথে সাথে থিম বদলায় এবং restart-এর পরও মনে থাকে।
+[✓] 6.4  lib/screens/tasbih_screen.dart এ shared_preferences যোগ করা হয়েছে — count, totalCount,
+    targetCount তিনটাই persist হয় (key: tasbih_count/tasbih_total_count/tasbih_target_count)।
+    initState এ _loadSaved() দিয়ে আগের অবস্থা লোড হয় (loading spinner দেখায় লোড হওয়া পর্যন্ত),
+    increment/reset/setTarget প্রতিটাতেই _persist() কল হয়। অ্যাপ বন্ধ করে আবার খুললেও কাউন্ট,
+    টোটাল ও টার্গেট আগের মতোই থাকে। এই সাথে worklist.txt-এর সব sub-task (গ্রুপ ১-৬) সম্পূর্ণ শেষ।
+[✓] 7.1  বটম নেভ বার আইকন — design_reference/.../res/drawable/img_nav_{home,quran,prayer,dua,more}.png
+    এই ৫টা assets/images/nav/ এ কপি করা হয়েছে (assets/images/ আগে থেকেই pubspec.yaml এ
+    রেজিস্টার করা ছিল, তাই আলাদা এন্ট্রি লাগেনি)। lib/widgets/root_shell.dart এ
+    NavigationDestination এর icon/selectedIcon এখন Image.asset(...) — ColorFiltered
+    (BlendMode.srcIn) দিয়ে মূল res/color/bottom_nav_color.xml selector এর হুবহু সমতুল্য:
+    selected → AppColors.primary (emerald green), unselected → #757575 gray।
+[✓] 8.1  assets/data/duas.json এ "নামাজের দোয়া" (namazer_dua) ক্যাটাগরি যোগ করা হয়েছে —
+    ৫টা দোয়া (তাকবীরে তাহরীমা, সানা, রুকু'র তাসবীহ, সিজদার তাসবীহ, তাশাহহুদ), title/arabic/
+    uccharon/bengali/reference সব ফিল্ড সহ। "ভ্রমণের দোয়া" (sofor_dua) আর "খাবারের দোয়া"
+    (khabarer_dua) যাচাই করে দেখা গেছে আগে থেকেই ২টা করে দোয়া নিয়ে সম্পূর্ণ ছিল — নতুন কিছু
+    যোগ করা লাগেনি। DuaScreen/DuaRepository dynamic JSON লোড করে বলে কোনো কোড পরিবর্তন লাগেনি,
+    নতুন ক্যাটাগরি এমনিতেই লিস্টে দেখাবে। মোট ক্যাটাগরি এখন ৭টা (আগে ছিল ৬টা)।
+[✓] 7.4  design_reference থেকে যাচাই করে দেখা গেছে compass_bg.xml আসলে শুধু দুইটা সাধারণ vector
+    shape (বাইরের পুরু রিং + ৪০dp ভেতরে পাতলা রিং) — তাই ছবি না বসিয়ে lib/screens/qibla_screen.dart
+    এ কোড দিয়েই দুইটা Container(BoxDecoration circle border) দিয়ে হুবহু বসানো হয়েছে।
+    ic_kaaba.xml আসলে জেনেরিক shield/badge আইকন (আসল কাবার মতো না), কিন্তু design_reference এ
+    আসল ইলাস্ট্রেটেড img_kaaba.png (কালো কিসওয়া + সোনালি বেল্ট + ইট) পাওয়া গেছে — সেটা
+    assets/images/qibla/img_kaaba.png এ কপি করে rotating pointer হিসেবে বসানো হয়েছে
+    (আগে ছিল জেনেরিক Icons.navigation)। img_qibla.png যাচাই করে দেখা গেছে img_compass.png এর
+    হুবহু কপি (md5 same) — আলাদা কিছু করার দরকার ছিল না।
+[✓] 8.2  assets/data/duas.json এ বাকি ৩টা ক্যাটাগরি যোগ করা হয়েছে: "অসুস্থতার দোয়া" (osusthotar_dua,
+    ৩টা দোয়া), "বিবাহের দোয়া" (bibaher_dua, ৩টা দোয়া), "রুকিয়াহ" (ruqyah, ৩টা দোয়া) — প্রতিটা
+    সহীহ হাদিস রেফারেন্স সহ। মোট ক্যাটাগরি এখন ১০টা (আগে ছিল ৭টা)।
+[✓] 8.3  lib/screens/dua_screen.dart এ প্রতিটা ক্যাটাগরির জন্য আলাদা Material আইকন ম্যাপ করা হয়েছে
+    (_categoryIcons ম্যাপ, category id দিয়ে lookup) — আগে সবগুলোতে একই
+    Icons.volunteer_activism_outlined ছিল। original এর ভেক্টর আইকনগুলো (ic_morning ইত্যাদি)
+    জেনেরিক হওয়ায় সরাসরি Material Icons এর কাছাকাছি সমতুল্য ব্যবহার করা হয়েছে
+    (mosque/restaurant/bedtime/flight/self_improvement/auto_awesome/healing/favorite/shield)।
+    গ্রুপ ৮ সম্পূর্ণ শেষ।
+
+=== যা এখনো বাকি (একদম ছোট ছোট sub-task, একটা সেশনে একটা মাত্র) ===
+
+--- গ্রুপ ১: নামাজের সময় --- ✅ সম্পূর্ণ শেষ (উপরে "যা সম্পন্ন হয়েছে" দেখুন)
+
+--- গ্রুপ ২: কুরআন সূরা লিস্ট --- ✅ সম্পূর্ণ শেষ (উপরে "যা সম্পন্ন হয়েছে" দেখুন)
+
+--- গ্রুপ ৩: দোয়া কন্টেন্ট --- ✅ সম্পূর্ণ শেষ (উপরে "যা সম্পন্ন হয়েছে" দেখুন)
+
+--- গ্রুপ ৪: হোম স্ক্রিনের বাকি অংশ --- ✅ সম্পূর্ণ শেষ (উপরে "যা সম্পন্ন হয়েছে" দেখুন)
+
+--- গ্রুপ ৫: More মেনুর বাকি আইটেম --- ✅ সম্পূর্ণ শেষ (উপরে "যা সম্পন্ন হয়েছে" দেখুন)
+
+--- গ্রুপ ৬: পলিশ (প্রতিটা আলাদা sub-task) ---
+6.1  flutter_launcher_icons যোগ করে app icon বসানো ✅ সম্পূর্ণ শেষ (উপরে "যা সম্পন্ন হয়েছে" দেখুন)
+6.2  flutter_native_splash দিয়ে splash screen বসানো ✅ সম্পূর্ণ শেষ (উপরে "যা সম্পন্ন হয়েছে" দেখুন)
+6.3  dark mode সুইচ main.dart এ কাজ করানো (themeMode: system) ✅ সম্পূর্ণ শেষ (উপরে দেখুন)
+6.4  shared_preferences দিয়ে তাসবিহ count persist করা ✅ সম্পূর্ণ শেষ (উপরে দেখুন)
+
+সব গ্রুপ (১-৬) সম্পূর্ণ শেষ — এই মুহূর্তে লিস্টে বাকি কোনো sub-task নেই। ইউজার নতুন
+ফিচার/ফিক্স চাইলে এখানে নতুন sub-task হিসেবে যোগ করে বলে দেবে।
+
+--- গ্রুপ ৭: হুবহু ভিজ্যুয়াল পোর্ট (original PNG/vector আর্ট বসানো) ---
+মূল Java/XML প্রজেক্টের res/ ও java/ ইতিমধ্যে এই zip-এর ভিতরে
+design_reference/android_original/ এ কপি করা আছে (res/drawable, layout,
+values, menu, mipmap + সব java সোর্স) — এই গ্রুপের কোনো sub-task করার
+জন্য আলাদা করে java/xml zip আপলোড করা লাগবে না, সরাসরি এখান থেকে পড়বে।
+
+7.1  ✅ সম্পূর্ণ শেষ (উপরে "যা সম্পন্ন হয়েছে" দেখুন)
+
+7.2  ✅ সম্পূর্ণ শেষ — lib/widgets/prayer_flower_widget.dart বানানো (static layout: ৬টা পাপড়ির আইকন
+     + বিসমিল্লাহ ফ্রেম, neutral ফুল background). সব ফুল/পাপড়ি ইমেজ assets/images/flower/ এ কপি করা।
+     HomeScreen এ header এ _NextPrayerCard এর পরে যুক্ত করা।
+
+7.2b ✅ সম্পূর্ণ শেষ (উপরে "সর্বশেষ আপডেট"-এর ডিটেইল দেখুন) — real prayer time অনুযায়ী active
+     ওয়াক্ত নির্ণয়, ট্যাপ করলে green→blue ফুলে স্পিন-অ্যানিমেশন+SnackBar+২.৫সে পর রিভার্ট,
+     bg_petal_active.xml গ্রেডিয়েন্ট active পাপড়িতে। গ্রুপ ৭ সম্পূর্ণ শেষ।
+
+7.3  ✅ সম্পূর্ণ শেষ — assets/images/menu/ এ ৭টা কাস্টম ইমেজ কপি করা (tasbih, qibla, zakat, names,
+     calendar, settings, info). _MenuEntry.icon (IconData) → imagePath (String) এ রূপান্তরিত।
+     MoreScreen.java এর ListTile.leading: Image.asset() দিয়ে update করা।
+
+7.4  ✅ সম্পূর্ণ শেষ (উপরে "যা সম্পন্ন হয়েছে" দেখুন)
+
+7.5  ✅ সম্পূর্ণ শেষ (উপরে "যা সম্পন্ন হয়েছে" দেখুন) — bg_header_gradient ও bg_icon_circle
+     কোড দিয়ে বসানো হয়েছে। bg_petal_active ইচ্ছাকৃতভাবে বাদ, 7.2b এর জন্য অপেক্ষায়।
+
+--- গ্রুপ ৮: দোয়া কন্টেন্ট সম্পূর্ণ করা (original এর তুলনায় কম ক্যাটাগরি) ---
+নোট: original এ DuaFragment.java তে ১২টা ক্যাটাগরি ছিল (সকাল/সন্ধ্যা/ঘুম/নামাজ/ভ্রমণ/খাবার/
+অসুস্থতা/বিবাহ/রুকিয়াহ/ইস্তিগফার/দরুদ/কুরআনের দোয়া — প্রতিটার আলাদা আইকন ic_morning ইত্যাদি),
+কিন্তু ট্যাপ করলে আসল original app এ কিছুই হতো না (onMenuItemClick/category ক্লিক লিসেনার খালি ছিল,
+"// Open dua list" কমেন্ট শুধু — কোনো real dua টেক্সট ডেটা original এ ছিলই না)। Flutter ভার্সনে
+৬টা ক্যাটাগরি বাস্তবে কাজ করে (real আরবি+বাংলা কন্টেন্ট সহ) — কার্যকারিতায় এটা upgrade,
+কিন্তু ক্যাটাগরি সংখ্যা original এর ১২টার তুলনায় কম। "হুবহু" চাইলে বাকি ৬টা ক্যাটাগরি
+(নামাজের দোয়া, ভ্রমণ, অসুস্থতা, বিবাহ, রুকিয়াহ, কুরআনের দোয়া) নতুন কন্টেন্ট দিয়ে যোগ করতে হবে।
+
+8.1  ✅ সম্পূর্ণ শেষ (উপরে "যা সম্পন্ন হয়েছে" দেখুন)
+8.2  ✅ সম্পূর্ণ শেষ (উপরে "যা সম্পন্ন হয়েছে" দেখুন)
+8.3  ✅ সম্পূর্ণ শেষ (উপরে "যা সম্পন্ন হয়েছে" দেখুন) — গ্রুপ ৮ সম্পূর্ণ শেষ। বাকি আছে শুধু
+     "কুরআনের দোয়া" ক্যাটাগরি (original এ ছিল কিন্তু এখনো যোগ করা হয়নি) — ইউজার চাইলে নতুন
+     sub-task হিসেবে যোগ করা যাবে (8.4)।
+
+=== নিয়ম ===
+প্রতি সেশনে এই লিস্ট থেকে ঠিক ১টা sub-task (যেমন শুধু 1.1, বা শুধু 2.3) করতে হবে — পুরো গ্রুপ না।
+
+=== গুরুত্বপূর্ণ নোট (পরের Claude সেশনের জন্য) ===
+- Package name অবশ্যই com.islamiczone.org রাখতে হবে (Play Store existing app)
+- android/ ফোল্ডার ইচ্ছাকৃতভাবে repo-তে নেই — CI প্রতিবার generate করে (.github/workflows/build.yml দেখুন)
+- Bengali strings/UI text বজায় রাখতে হবে, ইংরেজি না করা
+- মূল রঙ scheme (emerald green #0B6E4F + gold #D4A017) পরিবর্তন করা যাবে না
+- প্রতিটা সেশনের শেষে এই worklist.txt আপডেট করে zip এ দিতে হবে

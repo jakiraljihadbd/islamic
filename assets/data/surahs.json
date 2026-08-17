@@ -1,0 +1,800 @@
+[
+  {
+    "number": 1,
+    "nameArabic": "الفاتحة",
+    "nameBengali": "আল-ফাতিহা",
+    "ayahs": 7,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 2,
+    "nameArabic": "البقرة",
+    "nameBengali": "আল-বাকারা",
+    "ayahs": 286,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 3,
+    "nameArabic": "آل عمران",
+    "nameBengali": "আলে-ইমরান",
+    "ayahs": 200,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 4,
+    "nameArabic": "النساء",
+    "nameBengali": "আন-নিসা",
+    "ayahs": 176,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 5,
+    "nameArabic": "المائدة",
+    "nameBengali": "আল-মায়িদা",
+    "ayahs": 120,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 6,
+    "nameArabic": "الأنعام",
+    "nameBengali": "আল-আনআম",
+    "ayahs": 165,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 7,
+    "nameArabic": "الأعراف",
+    "nameBengali": "আল-আরাফ",
+    "ayahs": 206,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 8,
+    "nameArabic": "الأنفال",
+    "nameBengali": "আল-আনফাল",
+    "ayahs": 75,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 9,
+    "nameArabic": "التوبة",
+    "nameBengali": "আত-তাওবা",
+    "ayahs": 129,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 10,
+    "nameArabic": "يونس",
+    "nameBengali": "ইউনুস",
+    "ayahs": 109,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 11,
+    "nameArabic": "هود",
+    "nameBengali": "হুদ",
+    "ayahs": 123,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 12,
+    "nameArabic": "يوسف",
+    "nameBengali": "ইউসুফ",
+    "ayahs": 111,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 13,
+    "nameArabic": "الرعد",
+    "nameBengali": "আর-রাদ",
+    "ayahs": 43,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 14,
+    "nameArabic": "إبراهيم",
+    "nameBengali": "ইব্রাহীম",
+    "ayahs": 52,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 15,
+    "nameArabic": "الحجر",
+    "nameBengali": "আল-হিজর",
+    "ayahs": 99,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 16,
+    "nameArabic": "النحل",
+    "nameBengali": "আন-নাহল",
+    "ayahs": 128,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 17,
+    "nameArabic": "الإسراء",
+    "nameBengali": "বনী ইসরাঈল (আল-ইসরা)",
+    "ayahs": 111,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 18,
+    "nameArabic": "الكهف",
+    "nameBengali": "আল-কাহফ",
+    "ayahs": 110,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 19,
+    "nameArabic": "مريم",
+    "nameBengali": "মারইয়াম",
+    "ayahs": 98,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 20,
+    "nameArabic": "طه",
+    "nameBengali": "ত্ব-হা",
+    "ayahs": 135,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 21,
+    "nameArabic": "الأنبياء",
+    "nameBengali": "আল-আম্বিয়া",
+    "ayahs": 112,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 22,
+    "nameArabic": "الحج",
+    "nameBengali": "আল-হাজ্জ",
+    "ayahs": 78,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 23,
+    "nameArabic": "المؤمنون",
+    "nameBengali": "আল-মু'মিনূন",
+    "ayahs": 118,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 24,
+    "nameArabic": "النور",
+    "nameBengali": "আন-নূর",
+    "ayahs": 64,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 25,
+    "nameArabic": "الفرقان",
+    "nameBengali": "আল-ফুরকান",
+    "ayahs": 77,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 26,
+    "nameArabic": "الشعراء",
+    "nameBengali": "আশ-শুআরা",
+    "ayahs": 227,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 27,
+    "nameArabic": "النمل",
+    "nameBengali": "আন-নামল",
+    "ayahs": 93,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 28,
+    "nameArabic": "القصص",
+    "nameBengali": "আল-কাসাস",
+    "ayahs": 88,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 29,
+    "nameArabic": "العنكبوت",
+    "nameBengali": "আল-আনকাবূত",
+    "ayahs": 69,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 30,
+    "nameArabic": "الروم",
+    "nameBengali": "আর-রূম",
+    "ayahs": 60,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 31,
+    "nameArabic": "لقمان",
+    "nameBengali": "লুকমান",
+    "ayahs": 34,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 32,
+    "nameArabic": "السجدة",
+    "nameBengali": "আস-সাজদাহ",
+    "ayahs": 30,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 33,
+    "nameArabic": "الأحزاب",
+    "nameBengali": "আল-আহযাব",
+    "ayahs": 73,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 34,
+    "nameArabic": "سبإ",
+    "nameBengali": "সাবা",
+    "ayahs": 54,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 35,
+    "nameArabic": "فاطر",
+    "nameBengali": "ফাতির",
+    "ayahs": 45,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 36,
+    "nameArabic": "يس",
+    "nameBengali": "ইয়াসীন",
+    "ayahs": 83,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 37,
+    "nameArabic": "الصافات",
+    "nameBengali": "আস-সাফফাত",
+    "ayahs": 182,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 38,
+    "nameArabic": "ص",
+    "nameBengali": "সোয়াদ",
+    "ayahs": 88,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 39,
+    "nameArabic": "الزمر",
+    "nameBengali": "আয-যুমার",
+    "ayahs": 75,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 40,
+    "nameArabic": "غافر",
+    "nameBengali": "গাফির",
+    "ayahs": 85,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 41,
+    "nameArabic": "فصلت",
+    "nameBengali": "হা-মীম আস-সাজদাহ (ফুসসিলাত)",
+    "ayahs": 54,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 42,
+    "nameArabic": "الشورى",
+    "nameBengali": "আশ-শূরা",
+    "ayahs": 53,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 43,
+    "nameArabic": "الزخرف",
+    "nameBengali": "আয-যুখরুফ",
+    "ayahs": 89,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 44,
+    "nameArabic": "الدخان",
+    "nameBengali": "আদ-দুখান",
+    "ayahs": 59,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 45,
+    "nameArabic": "الجاثية",
+    "nameBengali": "আল-জাসিয়া",
+    "ayahs": 37,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 46,
+    "nameArabic": "الأحقاف",
+    "nameBengali": "আল-আহকাফ",
+    "ayahs": 35,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 47,
+    "nameArabic": "محمد",
+    "nameBengali": "মুহাম্মদ",
+    "ayahs": 38,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 48,
+    "nameArabic": "الفتح",
+    "nameBengali": "আল-ফাতহ",
+    "ayahs": 29,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 49,
+    "nameArabic": "الحجرات",
+    "nameBengali": "আল-হুজুরাত",
+    "ayahs": 18,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 50,
+    "nameArabic": "ق",
+    "nameBengali": "ক্বাফ",
+    "ayahs": 45,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 51,
+    "nameArabic": "الذاريات",
+    "nameBengali": "আয-যারিয়াত",
+    "ayahs": 60,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 52,
+    "nameArabic": "الطور",
+    "nameBengali": "আত-তূর",
+    "ayahs": 49,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 53,
+    "nameArabic": "النجم",
+    "nameBengali": "আন-নাজম",
+    "ayahs": 62,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 54,
+    "nameArabic": "القمر",
+    "nameBengali": "আল-ক্বামার",
+    "ayahs": 55,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 55,
+    "nameArabic": "الرحمن",
+    "nameBengali": "আর-রাহমান",
+    "ayahs": 78,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 56,
+    "nameArabic": "الواقعة",
+    "nameBengali": "আল-ওয়াকিয়া",
+    "ayahs": 96,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 57,
+    "nameArabic": "الحديد",
+    "nameBengali": "আল-হাদীদ",
+    "ayahs": 29,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 58,
+    "nameArabic": "المجادلة",
+    "nameBengali": "আল-মুজাদালাহ",
+    "ayahs": 22,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 59,
+    "nameArabic": "الحشر",
+    "nameBengali": "আল-হাশর",
+    "ayahs": 24,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 60,
+    "nameArabic": "الممتحنة",
+    "nameBengali": "আল-মুমতাহিনা",
+    "ayahs": 13,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 61,
+    "nameArabic": "الصف",
+    "nameBengali": "আস-সাফ",
+    "ayahs": 14,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 62,
+    "nameArabic": "الجمعة",
+    "nameBengali": "আল-জুমুআহ",
+    "ayahs": 11,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 63,
+    "nameArabic": "المنافقون",
+    "nameBengali": "আল-মুনাফিকূন",
+    "ayahs": 11,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 64,
+    "nameArabic": "التغابن",
+    "nameBengali": "আত-তাগাবুন",
+    "ayahs": 18,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 65,
+    "nameArabic": "الطلاق",
+    "nameBengali": "আত-তালাক",
+    "ayahs": 12,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 66,
+    "nameArabic": "التحريم",
+    "nameBengali": "আত-তাহরীম",
+    "ayahs": 12,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 67,
+    "nameArabic": "الملك",
+    "nameBengali": "আল-মুলক",
+    "ayahs": 30,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 68,
+    "nameArabic": "القلم",
+    "nameBengali": "আল-কলম",
+    "ayahs": 52,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 69,
+    "nameArabic": "الحاقة",
+    "nameBengali": "আল-হাক্কাহ",
+    "ayahs": 52,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 70,
+    "nameArabic": "المعارج",
+    "nameBengali": "আল-মাআরিজ",
+    "ayahs": 44,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 71,
+    "nameArabic": "نوح",
+    "nameBengali": "নূহ",
+    "ayahs": 28,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 72,
+    "nameArabic": "الجن",
+    "nameBengali": "আল-জিন",
+    "ayahs": 28,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 73,
+    "nameArabic": "المزمل",
+    "nameBengali": "আল-মুযযাম্মিল",
+    "ayahs": 20,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 74,
+    "nameArabic": "المدثر",
+    "nameBengali": "আল-মুদ্দাসসির",
+    "ayahs": 56,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 75,
+    "nameArabic": "القيامة",
+    "nameBengali": "আল-ক্বিয়ামাহ",
+    "ayahs": 40,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 76,
+    "nameArabic": "الإنسان",
+    "nameBengali": "আল-ইনসান",
+    "ayahs": 31,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 77,
+    "nameArabic": "المرسلات",
+    "nameBengali": "আল-মুরসালাত",
+    "ayahs": 50,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 78,
+    "nameArabic": "النبإ",
+    "nameBengali": "আন-নাবা",
+    "ayahs": 40,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 79,
+    "nameArabic": "النازعات",
+    "nameBengali": "আন-নাযিআত",
+    "ayahs": 46,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 80,
+    "nameArabic": "عبس",
+    "nameBengali": "আবাসা",
+    "ayahs": 42,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 81,
+    "nameArabic": "التكوير",
+    "nameBengali": "আত-তাকভীর",
+    "ayahs": 29,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 82,
+    "nameArabic": "الإنفطار",
+    "nameBengali": "আল-ইনফিতার",
+    "ayahs": 19,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 83,
+    "nameArabic": "المطففين",
+    "nameBengali": "আল-মুতাফফিফীন",
+    "ayahs": 36,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 84,
+    "nameArabic": "الإنشقاق",
+    "nameBengali": "আল-ইনশিকাক",
+    "ayahs": 25,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 85,
+    "nameArabic": "البروج",
+    "nameBengali": "আল-বুরূজ",
+    "ayahs": 22,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 86,
+    "nameArabic": "الطارق",
+    "nameBengali": "আত-তারিক",
+    "ayahs": 17,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 87,
+    "nameArabic": "الأعلى",
+    "nameBengali": "আল-আ'লা",
+    "ayahs": 19,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 88,
+    "nameArabic": "الغاشية",
+    "nameBengali": "আল-গাশিয়া",
+    "ayahs": 26,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 89,
+    "nameArabic": "الفجر",
+    "nameBengali": "আল-ফজর",
+    "ayahs": 30,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 90,
+    "nameArabic": "البلد",
+    "nameBengali": "আল-বালাদ",
+    "ayahs": 20,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 91,
+    "nameArabic": "الشمس",
+    "nameBengali": "আশ-শামস",
+    "ayahs": 15,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 92,
+    "nameArabic": "الليل",
+    "nameBengali": "আল-লাইল",
+    "ayahs": 21,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 93,
+    "nameArabic": "الضحى",
+    "nameBengali": "আদ-দুহা",
+    "ayahs": 11,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 94,
+    "nameArabic": "الشرح",
+    "nameBengali": "আশ-শারহ",
+    "ayahs": 8,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 95,
+    "nameArabic": "التين",
+    "nameBengali": "আত-তীন",
+    "ayahs": 8,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 96,
+    "nameArabic": "العلق",
+    "nameBengali": "আল-আলাক্ব",
+    "ayahs": 19,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 97,
+    "nameArabic": "القدر",
+    "nameBengali": "আল-ক্বদর",
+    "ayahs": 5,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 98,
+    "nameArabic": "البينة",
+    "nameBengali": "আল-বাইয়্যিনাহ",
+    "ayahs": 8,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 99,
+    "nameArabic": "الزلزلة",
+    "nameBengali": "আয-যিলযাল",
+    "ayahs": 8,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 100,
+    "nameArabic": "العاديات",
+    "nameBengali": "আল-আদিয়াত",
+    "ayahs": 11,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 101,
+    "nameArabic": "القارعة",
+    "nameBengali": "আল-ক্বারিআহ",
+    "ayahs": 11,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 102,
+    "nameArabic": "التكاثر",
+    "nameBengali": "আত-তাকাসুর",
+    "ayahs": 8,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 103,
+    "nameArabic": "العصر",
+    "nameBengali": "আল-আসর",
+    "ayahs": 3,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 104,
+    "nameArabic": "الهمزة",
+    "nameBengali": "আল-হুমাযাহ",
+    "ayahs": 9,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 105,
+    "nameArabic": "الفيل",
+    "nameBengali": "আল-ফীল",
+    "ayahs": 5,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 106,
+    "nameArabic": "قريش",
+    "nameBengali": "কুরাইশ",
+    "ayahs": 4,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 107,
+    "nameArabic": "الماعون",
+    "nameBengali": "আল-মাউন",
+    "ayahs": 7,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 108,
+    "nameArabic": "الكوثر",
+    "nameBengali": "আল-কাউসার",
+    "ayahs": 3,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 109,
+    "nameArabic": "الكافرون",
+    "nameBengali": "আল-কাফিরূন",
+    "ayahs": 6,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 110,
+    "nameArabic": "النصر",
+    "nameBengali": "আন-নাসর",
+    "ayahs": 3,
+    "revelationType": "মাদানী"
+  },
+  {
+    "number": 111,
+    "nameArabic": "المسد",
+    "nameBengali": "আল-মাসাদ",
+    "ayahs": 5,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 112,
+    "nameArabic": "الإخلاص",
+    "nameBengali": "আল-ইখলাস",
+    "ayahs": 4,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 113,
+    "nameArabic": "الفلق",
+    "nameBengali": "আল-ফালাক্ব",
+    "ayahs": 5,
+    "revelationType": "মক্কী"
+  },
+  {
+    "number": 114,
+    "nameArabic": "الناس",
+    "nameBengali": "আন-নাস",
+    "ayahs": 6,
+    "revelationType": "মক্কী"
+  }
+]

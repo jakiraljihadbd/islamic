@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_home"
+        android:icon="@drawable/img_nav_home"
+        android:title="@string/nav_home" />
+    <item
+        android:id="@+id/nav_quran"
+        android:icon="@drawable/img_nav_quran"
+        android:title="@string/nav_quran" />
+    <item
+        android:id="@+id/nav_prayer"
+        android:icon="@drawable/img_nav_prayer"
+        android:title="@string/nav_prayer" />
+    <item
+        android:id="@+id/nav_dua"
+        android:icon="@drawable/img_nav_dua"
+        android:title="@string/nav_dua" />
+    <item
+        android:id="@+id/nav_more"
+        android:icon="@drawable/img_nav_more"
+        android:title="@string/nav_more" />
+</menu>
