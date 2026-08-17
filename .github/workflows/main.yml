@@ -1,78 +1,76 @@
-name: islamic_zone
-description: "IslamicZone - Prayer times, Quran, Dua, Tasbih & Qibla"
-publish_to: 'none'
-version: 1.0.0+1
+name: Build Flutter APK
 
-environment:
-  sdk: '>=3.3.0 <4.0.0'
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
 
-dependencies:
-  flutter:
-    sdk: flutter
-  cupertino_icons: ^1.0.6
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-  # Qibla direction (compass sensor)
-  flutter_compass: ^0.8.1
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
-  # Location (for prayer times & qibla)
-  geolocator: ^12.0.0
-  permission_handler: ^11.3.1
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
 
-  # Quran PDF viewer
-  syncfusion_flutter_pdfviewer: ^26.2.14
+      - name: Ensure android/ platform folder exists
+        run: |
+          if [ ! -d "android" ]; then
+            flutter create --platforms=android --org com.islamiczone --project-name islamic_zone .
+          fi
 
-  # Tasbih counter persistence, saved settings
-  shared_preferences: ^2.2.3
+      - name: Set application id to match original app
+        run: |
+          BUILD_GRADLE="android/app/build.gradle.kts"
+          if [ ! -f "$BUILD_GRADLE" ]; then BUILD_GRADLE="android/app/build.gradle"; fi
+          sed -i 's/com\.islamiczone\.islamic_zone/com.islamiczone.org/g' "$BUILD_GRADLE"
+          sed -i 's/com\.islamiczone\.islamic_zone/com.islamiczone.org/g' android/app/src/main/AndroidManifest.xml || true
 
-  # Prayer time calculation
-  adhan: ^2.0.0
+      - name: Add required permissions (location, vibrate, notifications)
+        run: |
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          for PERM in \
+            "android.permission.INTERNET" \
+            "android.permission.ACCESS_FINE_LOCATION" \
+            "android.permission.ACCESS_COARSE_LOCATION" \
+            "android.permission.VIBRATE" \
+            "android.permission.RECEIVE_BOOT_COMPLETED" \
+            "android.permission.POST_NOTIFICATIONS"; do
+            if ! grep -q "$PERM" "$MANIFEST"; then
+              sed -i "0,/<manifest[^>]*>/s//&\n    <uses-permission android:name=\"$PERM\"\/>/" "$MANIFEST"
+            fi
+          done
+          cat "$MANIFEST"
 
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^4.0.0
-  flutter_launcher_icons: ^0.14.1
-  flutter_native_splash: ^2.4.1
+      - name: Get dependencies
+        run: flutter pub get
 
-flutter_launcher_icons:
-  android: true
-  ios: false
-  image_path: "assets/icon/icon.png"
-  adaptive_icon_background: "#0B6E4F"
-  adaptive_icon_foreground: "assets/icon/icon_foreground.png"
-  min_sdk_android: 21
+      - name: Generate app launcher icon
+        run: dart run flutter_launcher_icons
 
-flutter_native_splash:
-  color: "#0B6E4F"
-  image: "assets/icon/splash_logo.png"
-  android_12:
-    color: "#0B6E4F"
-    image: "assets/icon/splash_logo.png"
-  android: true
-  ios: false
+      - name: Generate native splash screen
+        run: dart run flutter_native_splash:create
 
-flutter:
-  uses-material-design: true
+      - name: Analyze (non-blocking)
+        run: flutter analyze || true
 
-  assets:
-    - assets/quran.pdf
-    - assets/images/
-    - assets/data/
-    - assets/icon/
+      - name: Build release APK
+        run: flutter build apk --release
 
-  fonts:
-    - family: Abdullah
-      fonts:
-        - asset: assets/fonts/abdullah.ttf
-    - family: AbdullahNew
-      fonts:
-        - asset: assets/fonts/abdullah_new.ttf
-    - family: Arabic
-      fonts:
-        - asset: assets/fonts/arabic.ttf
-    - family: Bahij
-      fonts:
-        - asset: assets/fonts/bahij.ttf
-    - family: ClockFont
-      fonts:
-        - asset: assets/fonts/clock_font.ttf
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: islamic-zone-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
