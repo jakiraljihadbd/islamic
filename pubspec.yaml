@@ -19,7 +19,7 @@ dependencies:
   permission_handler: ^11.3.1
 
   # Quran PDF viewer
-  syncfusion_flutter_pdfviewer: ^26.2.14
+  syncfusion_flutter_pdfviewer: ^34.2.3
 
   # Tasbih counter persistence, saved settings
   shared_preferences: ^2.2.3
@@ -40,7 +40,7 @@ flutter_launcher_icons:
   image_path: "assets/icon/icon.png"
   adaptive_icon_background: "#0B6E4F"
   adaptive_icon_foreground: "assets/icon/icon_foreground.png"
-  min_sdk_android: 21
+  min_sdk_android: 26
 
 flutter_native_splash:
   color: "#0B6E4F"

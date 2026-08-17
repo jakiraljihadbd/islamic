@@ -38,6 +38,14 @@ jobs:
           sed -i 's/com\.islamiczone\.islamic_zone/com.islamiczone.org/g' "$BUILD_GRADLE"
           sed -i 's/com\.islamiczone\.islamic_zone/com.islamiczone.org/g' android/app/src/main/AndroidManifest.xml || true
 
+      - name: Set minSdk to 26 (Android 8.0 Oreo and up)
+        run: |
+          BUILD_GRADLE="android/app/build.gradle.kts"
+          if [ ! -f "$BUILD_GRADLE" ]; then BUILD_GRADLE="android/app/build.gradle"; fi
+          sed -i 's/minSdk = flutter\.minSdkVersion/minSdk = 26/' "$BUILD_GRADLE"
+          sed -i 's/minSdkVersion flutter\.minSdkVersion/minSdkVersion 26/' "$BUILD_GRADLE"
+          grep -n "minSdk" "$BUILD_GRADLE"
+
       - name: Add required permissions (location, vibrate, notifications)
         run: |
           MANIFEST="android/app/src/main/AndroidManifest.xml"
