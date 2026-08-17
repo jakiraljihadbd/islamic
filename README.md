@@ -56,4 +56,3 @@ GitHub-এ push করলেই `main` ব্রাঞ্চে workflow অট�
 | geolocator + permission_handler | লোকেশন (কিবলা + নামাজের সময়ের জন্য) |
 | syncfusion_flutter_pdfviewer | কুরআন PDF দেখানো |
 | shared_preferences | পরের ধাপে তাসবিহ/সেটিংস সেভ করতে |
-# Islamic
