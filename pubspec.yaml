@@ -27,6 +27,9 @@ dependencies:
   # Prayer time calculation
   adhan: ^2.0.0
 
+  # অ্যাপ ক্র্যাশ হলে কারণ ফাইলে লিখে রাখার জন্য
+  path_provider: ^2.1.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

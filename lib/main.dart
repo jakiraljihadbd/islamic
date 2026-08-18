@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'theme/app_theme.dart';
+import 'services/crash_logger.dart';
 import 'services/theme_controller.dart';
 import 'widgets/root_shell.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  // Original app locks orientation to portrait for every screen.
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]).then((_) async {
+  // পুরো অ্যাপ এই wrapper-এর ভেতর থেকে চালানো হচ্ছে যাতে কোনো ধরনের
+  // uncaught exception (widget build error, async error ইত্যাদি) সরাসরি
+  // ফোনের Android/data/com.islamiczone.org/files/islamic_zone_crash_log.txt
+  // ফাইলে লেখা হয় — adb/logcat ছাড়াই crash-এর কারণ দেখা যাবে।
+  CrashLogger.runGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    // Original app locks orientation to portrait for every screen.
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
     await ThemeController.instance.loadSaved();
     runApp(const IslamicZoneApp());
   });
