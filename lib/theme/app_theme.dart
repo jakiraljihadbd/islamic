@@ -70,5 +70,33 @@ class AppTheme {
           elevation: 0,
           centerTitle: true,
         ),
+        // আগে dark theme-এ cardTheme/navigationBarTheme সেট ছিল না, তাই dark
+        // mode-এ card আর bottom nav bar default (inconsistent) রঙ পেত।
+        cardTheme: CardThemeData(
+          color: AppColors.surfaceDark,
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        navigationBarTheme: NavigationBarThemeData(
+          backgroundColor: AppColors.surfaceDark,
+          indicatorColor: AppColors.primaryLight.withValues(alpha: 0.25),
+          labelTextStyle: WidgetStateProperty.resolveWith((states) {
+            final selected = states.contains(WidgetState.selected);
+            return TextStyle(
+              fontSize: 12,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+              color: selected ? AppColors.primaryLight : AppColors.onBackgroundDark,
+            );
+          }),
+          iconTheme: WidgetStateProperty.resolveWith((states) {
+            final selected = states.contains(WidgetState.selected);
+            return IconThemeData(
+              color: selected ? AppColors.primaryLight : AppColors.onBackgroundDark,
+            );
+          }),
+        ),
+        dividerColor: AppColors.divider.withValues(alpha: 0.15),
       );
 }

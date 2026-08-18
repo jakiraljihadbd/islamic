@@ -174,9 +174,11 @@ class _PrayerFlowerWidgetState extends State<PrayerFlowerWidget> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 // bg_petal_active.xml (oval, success→primary_variant) — শুধু active
-                // পাপড়িতে; বাকিগুলোতে আগের নিউট্রাল হালকা ব্যাকগ্রাউন্ড।
+                // পাপড়িতে; বাকিগুলোতে হালকা সাদা-ট্রান্সপারেন্ট ব্যাকগ্রাউন্ড
+                // (এই উইজেটটা গাঢ় সবুজ header gradient-এর উপর বসে, তাই গাঢ়
+                // রঙের বদলে সাদা-ভিত্তিক রঙ ব্যবহার করা হচ্ছে যাতে দেখা যায়)।
                 gradient: isActive ? AppColors.petalActiveGradient : null,
-                color: isActive ? null : AppColors.primary.withValues(alpha: 0.1),
+                color: isActive ? null : Colors.white.withValues(alpha: 0.15),
               ),
               child: Center(
                 child: Image.asset(
@@ -192,8 +194,11 @@ class _PrayerFlowerWidgetState extends State<PrayerFlowerWidget> {
               petal.name,
               style: TextStyle(
                 fontSize: 10,
-                fontWeight: FontWeight.w500,
-                color: isActive ? AppColors.primary : AppColors.onSurface,
+                fontWeight: FontWeight.w600,
+                // গাঢ় সবুজ header gradient-এর উপর টেক্সট, তাই সাদা/আধা-সাদা
+                // রঙ ব্যবহার করা হচ্ছে (AppColors.onSurface/primary ছিল প্রায়
+                // অদৃশ্য — এটাই ছিল হোম পেজের কালার সমস্যা)।
+                color: isActive ? Colors.white : Colors.white70,
               ),
               textAlign: TextAlign.center,
             ),

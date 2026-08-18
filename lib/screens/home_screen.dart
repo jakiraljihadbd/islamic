@@ -284,6 +284,10 @@ class _DailyVerseHadithCardState extends State<_DailyVerseHadithCard> {
         ),
       );
     }
+    // dark mode-এ AppColors.primaryVariant (গাঢ় সবুজ) dark card background-এর
+    // উপর কম-কনট্রাস্ট/পড়তে কষ্ট হয়, তাই dark mode-এ হালকা primaryLight ব্যবহার।
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final referenceColor = isDark ? AppColors.primaryLight : AppColors.primaryVariant;
     return Column(
       children: [
         Card(
@@ -305,7 +309,7 @@ class _DailyVerseHadithCardState extends State<_DailyVerseHadithCard> {
                 Text(verse.bengali, style: const TextStyle(fontSize: 14, height: 1.5)),
                 const SizedBox(height: 6),
                 Text(verse.reference,
-                    style: const TextStyle(fontSize: 12, color: AppColors.primaryVariant, fontWeight: FontWeight.w600)),
+                    style: TextStyle(fontSize: 12, color: referenceColor, fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -330,7 +334,7 @@ class _DailyVerseHadithCardState extends State<_DailyVerseHadithCard> {
                 Text(hadith.bengali, style: const TextStyle(fontSize: 14, height: 1.5)),
                 const SizedBox(height: 6),
                 Text(hadith.reference,
-                    style: const TextStyle(fontSize: 12, color: AppColors.primaryVariant, fontWeight: FontWeight.w600)),
+                    style: TextStyle(fontSize: 12, color: referenceColor, fontWeight: FontWeight.w600)),
               ],
             ),
           ),
