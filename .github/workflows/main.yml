@@ -5,12 +5,20 @@ on:
     branches: [ main ]
   workflow_dispatch: {}
 
+# GitHub Release তৈরি/আপডেট করে APK বা fail-log পাবলিশ করার জন্য অনুমতি দরকার
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+
+      - name: Start log capture
+        run: |
+          echo "Build started $(date)" > build_log.txt
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -26,27 +34,66 @@ jobs:
 
       - name: Ensure android/ platform folder exists
         run: |
-          if [ ! -d "android" ]; then
-            flutter create --platforms=android --org com.islamiczone --project-name islamic_zone .
-          fi
+          set -o pipefail
+          { if [ ! -d "android" ]; then
+              flutter create --platforms=android --org com.islamiczone --project-name islamic_zone .
+            fi
+          } 2>&1 | tee -a build_log.txt
 
       - name: Set application id to match original app
         run: |
+          set -o pipefail
+          {
+          OLD_PKG="com.islamiczone.islamic_zone"
+          NEW_PKG="com.islamiczone.org"
+          OLD_PATH=$(echo "$OLD_PKG" | tr '.' '/')
+          NEW_PATH=$(echo "$NEW_PKG" | tr '.' '/')
+
           BUILD_GRADLE="android/app/build.gradle.kts"
           if [ ! -f "$BUILD_GRADLE" ]; then BUILD_GRADLE="android/app/build.gradle"; fi
-          sed -i 's/com\.islamiczone\.islamic_zone/com.islamiczone.org/g' "$BUILD_GRADLE"
-          sed -i 's/com\.islamiczone\.islamic_zone/com.islamiczone.org/g' android/app/src/main/AndroidManifest.xml || true
+          sed -i "s/$OLD_PKG/$NEW_PKG/g" "$BUILD_GRADLE"
+          sed -i "s/$OLD_PKG/$NEW_PKG/g" android/app/src/main/AndroidManifest.xml || true
+
+          # আগের step শুধু build.gradle-এ namespace/applicationId বদলাত, কিন্তু
+          # MainActivity.kt ফাইলটা পুরনো package-folder-এই থেকে যেত এবং তার ভেতরের
+          # `package` line-ও বদলাত না — namespace আর actual compiled class এর
+          # package আলাদা হয়ে যেত, ফলে launch করার সময় ClassNotFoundException
+          # দিয়ে app সাথে সাথে ক্র্যাশ করত (build/install ঠিকই হতো)।
+          # এখানে MainActivity.kt-কে নতুন namespace-এর সঠিক ফোল্ডারে move করে
+          # তার package line-ও আপডেট করে দিচ্ছি।
+          for KOTLIN_ROOT in "android/app/src/main/kotlin" "android/app/src/main/java"; do
+            OLD_FILE="$KOTLIN_ROOT/$OLD_PATH/MainActivity.kt"
+            if [ -f "$OLD_FILE" ]; then
+              NEW_DIR="$KOTLIN_ROOT/$NEW_PATH"
+              mkdir -p "$NEW_DIR"
+              sed -i "s/^package $OLD_PKG/package $NEW_PKG/" "$OLD_FILE"
+              mv "$OLD_FILE" "$NEW_DIR/MainActivity.kt"
+              # খালি হয়ে যাওয়া পুরনো package ফোল্ডারগুলো (এবং তাদের খালি parent) মুছে ফেলা
+              find "$KOTLIN_ROOT" -type d -empty -delete
+            fi
+          done
+
+          echo "----- build.gradle namespace/applicationId -----"
+          grep -n "namespace\|applicationId" "$BUILD_GRADLE"
+          echo "----- MainActivity.kt location -----"
+          find android/app/src/main -name "MainActivity.kt" -exec echo {} \; -exec head -3 {} \;
+          } 2>&1 | tee -a build_log.txt
 
       - name: Set minSdk to 26 (Android 8.0 Oreo and up)
         run: |
+          set -o pipefail
+          {
           BUILD_GRADLE="android/app/build.gradle.kts"
           if [ ! -f "$BUILD_GRADLE" ]; then BUILD_GRADLE="android/app/build.gradle"; fi
           sed -i 's/minSdk = flutter\.minSdkVersion/minSdk = 26/' "$BUILD_GRADLE"
           sed -i 's/minSdkVersion flutter\.minSdkVersion/minSdkVersion 26/' "$BUILD_GRADLE"
           grep -n "minSdk" "$BUILD_GRADLE"
+          } 2>&1 | tee -a build_log.txt
 
       - name: Add required permissions (location, vibrate, notifications)
         run: |
+          set -o pipefail
+          {
           MANIFEST="android/app/src/main/AndroidManifest.xml"
           for PERM in \
             "android.permission.INTERNET" \
@@ -60,24 +107,105 @@ jobs:
             fi
           done
           cat "$MANIFEST"
+          } 2>&1 | tee -a build_log.txt
 
       - name: Get dependencies
-        run: flutter pub get
+        run: |
+          set -o pipefail
+          flutter pub get 2>&1 | tee -a build_log.txt
 
       - name: Generate app launcher icon
-        run: dart run flutter_launcher_icons
+        run: |
+          set -o pipefail
+          dart run flutter_launcher_icons 2>&1 | tee -a build_log.txt
 
       - name: Generate native splash screen
-        run: dart run flutter_native_splash:create
+        run: |
+          set -o pipefail
+          dart run flutter_native_splash:create 2>&1 | tee -a build_log.txt
 
       - name: Analyze (non-blocking)
-        run: flutter analyze || true
+        run: |
+          flutter analyze 2>&1 | tee -a build_log.txt || true
 
       - name: Build release APK
-        run: flutter build apk --release
+        run: |
+          set -o pipefail
+          flutter build apk --release 2>&1 | tee -a build_log.txt
 
       - name: Upload APK artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: islamic-zone-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+
+      # প্রতিটা build-এই (success বা fail যাই হোক) পুরো log একটা ফিক্সড
+      # ("latest-build-log") লিংকে রাখা হচ্ছে — এতে app যদি device-এ ওপেন হয়ে
+      # ক্র্যাশ করে (CI-তে ধরা না পড়া), তাহলেও namespace/MainActivity ঠিকমতো
+      # বসেছে কিনা সেটা log দেখে যাচাই করা যাবে।
+      - name: Remove previous build-log release (keep only one)
+        if: always()
+        run: gh release delete latest-build-log --yes || true
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Publish full build log to fixed download link (always)
+        if: always()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-build-log
+          name: "সর্বশেষ Build-এর সম্পূর্ণ Log"
+          body: |
+            এই Release-টা সবসময় সর্বশেষ build-এর (success/fail যাই হোক) পুরো log ধরে রাখে।
+            ডাউনলোড লিংক সবসময় একই থাকবে:
+            build_log.txt
+          files: build_log.txt
+          make_latest: false
+
+      # Release-এ শুধু একটাই এন্ট্রি রাখার জন্য — নতুন publish করার আগে
+      # পুরনো "latest-apk" release (যদি থাকে) মুছে ফেলা হচ্ছে, যাতে পুরনোগুলো
+      # জমে না থেকে সবসময় শুধু একটাই (সর্বশেষটা) থাকে।
+      - name: Remove previous APK release (keep only one)
+        if: success()
+        run: gh release delete latest-apk --yes || true
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      # Build সফল হলে APK-টা একটা ফিক্সড ("latest-apk") ট্যাগের Release-এ
+      # publish হয় — এতে সবসময় একই ডাউনলোড URL পাওয়া যায়, তাই Termux থেকে
+      # প্রতিবার নতুন লিংক খুঁজতে হয় না।
+      - name: Publish APK to fixed download link (on success)
+        if: success()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-apk
+          name: "সর্বশেষ সফল Build (APK)"
+          body: |
+            এই Release-টা সবসময় সর্বশেষ সফল build-এর APK ধরে রাখে।
+            ডাউনলোড লিংক সবসময় একই থাকবে:
+            app-release.apk
+          files: build/app/outputs/flutter-apk/app-release.apk
+          make_latest: false
+
+      # একইভাবে fail-log-এর জন্যও পুরনো release মুছে ফেলা হচ্ছে
+      - name: Remove previous fail-log release (keep only one)
+        if: failure()
+        run: gh release delete latest-fail-log --yes || true
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      # Build fail হলে এতক্ষণ যা log জমা হয়েছে (build_log.txt) সেটাকে
+      # একটা ফিক্সড ("latest-fail-log") ট্যাগের Release-এ publish করা হয়।
+      - name: Publish failure log to fixed download link (on failure)
+        if: failure()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-fail-log
+          name: "সর্বশেষ ব্যর্থ Build-এর Log"
+          body: |
+            এই Release-টা সবসময় সর্বশেষ ব্যর্থ (fail) build-এর log ধরে রাখে।
+            ডাউনলোড লিংক সবসময় একই থাকবে:
+            build_log.txt
+          files: build_log.txt
+          make_latest: false
