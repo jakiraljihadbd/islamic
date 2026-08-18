@@ -5,6 +5,7 @@ import '../models/daily_content.dart';
 import '../services/prayer_time_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/prayer_flower_widget.dart';
+import '../widgets/salat_tracker_card.dart';
 import 'tasbih_screen.dart';
 import 'qibla_screen.dart';
 import 'zakat_calculator_screen.dart';
@@ -54,7 +55,7 @@ class HomeScreen extends StatelessWidget {
           SliverToBoxAdapter(
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
               decoration: const BoxDecoration(
                 // 7.5: bg_header_gradient.xml
                 gradient: AppColors.headerGradient,
@@ -67,10 +68,14 @@ class HomeScreen extends StatelessWidget {
                       style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
                   const _NextPrayerCard(),
-                  const SizedBox(height: 24),
-                  PrayerFlowerWidget(),
                 ],
               ),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            sliver: SliverToBoxAdapter(
+              child: PrayerFlowerWidget(),
             ),
           ),
           SliverPadding(
@@ -112,6 +117,9 @@ class HomeScreen extends StatelessWidget {
                       );
                     },
                   ),
+                  const SizedBox(height: 24),
+                  // Phase-3: আজকের সালাত ট্র্যাকার (৫ ওয়াক্ত টিক/ক্রস, SharedPreferences persist)
+                  const SalatTrackerCard(),
                   const SizedBox(height: 24),
                   const Text('আজকের আয়াত ও হাদিস', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 12),
@@ -255,11 +263,19 @@ class _DailyVerseHadithCard extends StatefulWidget {
 class _DailyVerseHadithCardState extends State<_DailyVerseHadithCard> {
   VerseHadith? _verse;
   VerseHadith? _hadith;
+  final PageController _pageController = PageController();
+  int _page = 0;
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -270,6 +286,49 @@ class _DailyVerseHadithCardState extends State<_DailyVerseHadithCard> {
       _verse = verse;
       _hadith = hadith;
     });
+  }
+
+  Widget _slideCard({required String label, required IconData icon, required VerseHadith item, required Color referenceColor}) {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
+        child: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, size: 16, color: AppColors.secondary),
+                  const SizedBox(width: 6),
+                  Text(label,
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.secondary,
+                        letterSpacing: 0.3,
+                      )),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                item.arabic,
+                textAlign: TextAlign.right,
+                textDirection: TextDirection.rtl,
+                style: const TextStyle(fontFamily: 'Bahij', fontSize: 21, height: 2.0),
+              ),
+              const SizedBox(height: 12),
+              Text(item.bengali, style: const TextStyle(fontSize: 14.5, height: 1.6)),
+              const SizedBox(height: 8),
+              Text(item.reference,
+                  style: TextStyle(fontSize: 11.5, color: referenceColor, fontWeight: FontWeight.w600)),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -288,69 +347,51 @@ class _DailyVerseHadithCardState extends State<_DailyVerseHadithCard> {
     // উপর কম-কনট্রাস্ট/পড়তে কষ্ট হয়, তাই dark mode-এ হালকা primaryLight ব্যবহার।
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final referenceColor = isDark ? AppColors.primaryLight : AppColors.primaryVariant;
+    final pages = [
+      _slideCard(label: 'আজকের আয়াত', icon: Icons.menu_book_outlined, item: verse, referenceColor: referenceColor),
+      _slideCard(label: 'আজকের হাদিস', icon: Icons.article_outlined, item: hadith, referenceColor: referenceColor),
+    ];
     return Column(
       children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('আজকের আয়াত',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.secondary)),
-                const SizedBox(height: 10),
-                Text(
-                  verse.arabic,
-                  textAlign: TextAlign.right,
-                  textDirection: TextDirection.rtl,
-                  style: const TextStyle(fontFamily: 'Arabic', fontSize: 20, height: 1.7),
-                ),
-                const SizedBox(height: 10),
-                Text(verse.bengali, style: const TextStyle(fontSize: 14, height: 1.5)),
-                const SizedBox(height: 6),
-                Text(verse.reference,
-                    style: TextStyle(fontSize: 12, color: referenceColor, fontWeight: FontWeight.w600)),
-              ],
-            ),
+        SizedBox(
+          // আগে ছিল hard-coded 280 (guess); এখন 260 + কার্ডের ভেতরে SingleChildScrollView
+          // দিয়ে overflow-সেফ করা হয়েছে (লম্বা আয়াত/হাদিস টেক্সটেও কার্ড ভাঙবে না)।
+          height: 260,
+          child: PageView(
+            controller: _pageController,
+            onPageChanged: (i) => setState(() => _page = i),
+            children: pages,
           ),
         ),
-        const SizedBox(height: 12),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('আজকের হাদিস',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.secondary)),
-                const SizedBox(height: 10),
-                Text(
-                  hadith.arabic,
-                  textAlign: TextAlign.right,
-                  textDirection: TextDirection.rtl,
-                  style: const TextStyle(fontFamily: 'Arabic', fontSize: 20, height: 1.7),
-                ),
-                const SizedBox(height: 10),
-                Text(hadith.bengali, style: const TextStyle(fontSize: 14, height: 1.5)),
-                const SizedBox(height: 6),
-                Text(hadith.reference,
-                    style: TextStyle(fontSize: 12, color: referenceColor, fontWeight: FontWeight.w600)),
-              ],
-            ),
-          ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(pages.length, (i) {
+            final active = i == _page;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: active ? 20 : 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: active ? AppColors.primary : AppColors.primary.withValues(alpha: 0.25),
+                borderRadius: BorderRadius.circular(3),
+              ),
+            );
+          }),
         ),
       ],
     );
   }
 }
 
-/// 4.3: দৈনিক লক্ষ্য কার্ড — আপাতত static ইনপুট (৫ ওয়াক্ত নামাজ, কুরআন তিলাওয়াত, তাসবিহ, দোয়া)।
-/// পরে shared_preferences দিয়ে persist করা যাবে (গ্রুপ ৬-এ)।
+/// 4.3: দৈনিক লক্ষ্য কার্ড — আপাতত static ইনপুট (কুরআন তিলাওয়াত, তাসবিহ, দোয়া)।
+/// ৫ ওয়াক্ত নামাজ আলাদা SalatTrackerCard এ (Phase-3, real persist) সরানো হয়েছে,
+/// এখানে ডুপ্লিকেট রাখা হয়নি। কুরআন/তাসবিহ/দোয়া পরে Phase-4/5-এ real হবে।
 class _DailyGoalsCard extends StatelessWidget {
   const _DailyGoalsCard();
 
   static const _goals = [
-    _Goal('৫ ওয়াক্ত নামাজ', Icons.mosque_outlined, 3, 5),
     _Goal('কুরআন তিলাওয়াত', Icons.menu_book_outlined, 1, 1),
     _Goal('তাসবিহ (১০০ বার)', Icons.fingerprint, 0, 1),
     _Goal('সকাল-সন্ধ্যার দোয়া', Icons.volunteer_activism_outlined, 1, 2),

@@ -33,7 +33,6 @@ class _Petal {
 class _PrayerFlowerWidgetState extends State<PrayerFlowerWidget> {
   static const _defs = [
     ('ফজর', 'ic_petal_fajr', 'img_flower_fajr'),
-    ('সূর্যোদয়', 'ic_petal_sunrise', 'img_flower_sunrise'),
     ('যোহর', 'ic_petal_dhuhr', 'img_flower_dhuhr'),
     ('আসর', 'ic_petal_asr', 'img_flower_asr'),
     ('মাগরিব', 'ic_petal_maghrib', 'img_flower_maghrib'),
@@ -43,7 +42,7 @@ class _PrayerFlowerWidgetState extends State<PrayerFlowerWidget> {
   late List<_Petal> _petals;
   late int _activeIndex;
   int? _selectedIndex;
-  String _currentFlower = 'assets/images/flower/img_flower_neutral.png';
+  String _currentFlower = 'assets/images/flower/img_flower_fajr_green.png';
   Timer? _revertTimer;
 
   @override
@@ -114,44 +113,100 @@ class _PrayerFlowerWidgetState extends State<PrayerFlowerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // active/tapped ওয়াক্ত অনুযায়ী সবুজ/নীল ফুল — স্পিন+স্কেল অ্যানিমেশন দিয়ে বদলায়
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            transitionBuilder: (child, animation) => RotationTransition(
-              turns: Tween<double>(begin: 0.5, end: 1.0).animate(animation),
-              child: ScaleTransition(
-                scale: Tween<double>(begin: 0.92, end: 1.0).animate(animation),
-                child: child,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // বিসমিল্লাহ ব্যানার (নতুন, সুন্দর উপরে)
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.primary.withValues(alpha: 0.1), AppColors.primaryVariant.withValues(alpha: 0.08)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 1),
+          ),
+          child: Column(
+            children: [
+              Text(
+                'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
+                style: const TextStyle(
+                  fontFamily: 'Arabic',
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  height: 1.6,
+                  color: AppColors.primary,
+                ),
+                textAlign: TextAlign.center,
+                textDirection: TextDirection.rtl,
               ),
-            ),
-            child: Image.asset(
-              _currentFlower,
-              key: ValueKey(_currentFlower),
-              width: 280,
-              height: 280,
-              fit: BoxFit.contain,
-            ),
+              const SizedBox(height: 6),
+              const Text(
+                'বিসমিল্লাহি আর-রাহমানি আর-রাহিম',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.secondary,
+                  letterSpacing: 0.3,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-          // বিসমিল্লাহ ফ্রেম (center overlap)
-          Image.asset(
-            'assets/images/flower/img_bismi_frame.png',
-            width: 160,
-            height: 160,
-            fit: BoxFit.contain,
+        ),
+        const SizedBox(height: 20),
+        // ৫টি পাপড়ির ফুল (সূর্যোদয় বাদ)
+        Center(
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // active/tapped ওয়াক্ত অনুযায়ী সবুজ/নীল ফুল — স্পিন+স্কেল অ্যানিমেশন
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                transitionBuilder: (child, animation) => RotationTransition(
+                  turns: Tween<double>(begin: 0.5, end: 1.0).animate(animation),
+                  child: ScaleTransition(
+                    scale: Tween<double>(begin: 0.92, end: 1.0).animate(animation),
+                    child: child,
+                  ),
+                ),
+                child: Image.asset(
+                  _currentFlower,
+                  key: ValueKey(_currentFlower),
+                  width: 280,
+                  height: 280,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    // ইমেজ না পেলে fallback (ফজর সবুজ)
+                    return Image.asset(
+                      'assets/images/flower/img_flower_fajr_green.png',
+                      width: 280,
+                      height: 280,
+                      fit: BoxFit.contain,
+                    );
+                  },
+                ),
+              ),
+              // বিসমিল্লাহ ফ্রেম (center overlap)
+              Image.asset(
+                'assets/images/flower/img_bismi_frame.png',
+                width: 160,
+                height: 160,
+                fit: BoxFit.contain,
+              ),
+              // ৫টা পেটাল (সমবৃত্তাকারে)
+              _petalPosition(0, -130, -30),   // ফজর (top-left)
+              _petalPosition(1, 130, -30),    // যোহর (top-right)
+              _petalPosition(2, 80, 110),     // আসর (bottom-right)
+              _petalPosition(3, -80, 110),    // মাগরিব (bottom-left)
+              _petalPosition(4, 0, -150),     // ইশা (top-center)
+            ],
           ),
-          // ৬টা পেটাল (ট্যাপযোগ্য)
-          _petalPosition(0, -100, -60),  // ফজর (top-left)
-          _petalPosition(1, 100, -60),   // সূর্যোদয় (top-right)
-          _petalPosition(2, 140, 0),     // যোহর (right)
-          _petalPosition(3, 100, 60),    // আসর (bottom-right)
-          _petalPosition(4, -100, 60),   // মাগরিব (bottom-left)
-          _petalPosition(5, -140, 0),    // ইশা (left)
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -169,39 +224,61 @@ class _PrayerFlowerWidgetState extends State<PrayerFlowerWidget> {
           children: [
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              width: 50,
-              height: 50,
+              width: 60,
+              height: 60,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                // bg_petal_active.xml (oval, success→primary_variant) — শুধু active
-                // পাপড়িতে; বাকিগুলোতে হালকা সাদা-ট্রান্সপারেন্ট ব্যাকগ্রাউন্ড
-                // (এই উইজেটটা গাঢ় সবুজ header gradient-এর উপর বসে, তাই গাঢ়
-                // রঙের বদলে সাদা-ভিত্তিক রঙ ব্যবহার করা হচ্ছে যাতে দেখা যায়)।
                 gradient: isActive ? AppColors.petalActiveGradient : null,
-                color: isActive ? null : Colors.white.withValues(alpha: 0.15),
+                color: isActive ? null : Colors.white.withValues(alpha: 0.12),
+                boxShadow: isActive
+                    ? [
+                        BoxShadow(
+                          color: AppColors.success.withValues(alpha: 0.3),
+                          blurRadius: 12,
+                          spreadRadius: 2,
+                        )
+                      ]
+                    : null,
               ),
               child: Center(
                 child: Image.asset(
                   'assets/images/flower/${petal.petalIcon}.png',
-                  width: 32,
-                  height: 32,
+                  width: 36,
+                  height: 36,
                   fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    // পেটাল আইকন না পেলে সিম্পল সার্কেল আইকন দেখাও
+                    return Icon(
+                      Icons.circle_outlined,
+                      size: 36,
+                      color: Colors.white,
+                    );
+                  },
                 ),
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
               petal.name,
               style: TextStyle(
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: FontWeight.w600,
-                // গাঢ় সবুজ header gradient-এর উপর টেক্সট, তাই সাদা/আধা-সাদা
-                // রঙ ব্যবহার করা হচ্ছে (AppColors.onSurface/primary ছিল প্রায়
-                // অদৃশ্য — এটাই ছিল হোম পেজের কালার সমস্যা)।
                 color: isActive ? Colors.white : Colors.white70,
+                letterSpacing: 0.2,
               ),
               textAlign: TextAlign.center,
             ),
+            if (isActive) ...[
+              const SizedBox(height: 2),
+              Text(
+                TimeOfDay.fromDateTime(petal.time).format(context),
+                style: const TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white60,
+                ),
+              ),
+            ]
           ],
         ),
       ),
