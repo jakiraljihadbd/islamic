@@ -207,7 +207,7 @@ class _NextPrayerCardState extends State<_NextPrayerCard> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.15),
+        color: Colors.white.withOpacity(0.15),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
@@ -244,7 +244,7 @@ class _NextPrayerCardState extends State<_NextPrayerCard> {
   }
 }
 
-/// 4.2: রোজ একটা fix আয়াত + একটা fix হাদিস দেখায় (তারিখ অনুযায়ী, সারাদিন একই থাকে)।
+/// 4.2: রোজ একটা fix আয়াত + একটা fix হাদিস দেখায় (তারিখ অনুযায়ী, সারাদিন একই থাকে)�[...]
 class _DailyVerseHadithCard extends StatefulWidget {
   const _DailyVerseHadithCard();
 
@@ -340,7 +340,7 @@ class _DailyVerseHadithCardState extends State<_DailyVerseHadithCard> {
   }
 }
 
-/// 4.3: দৈনিক লক্ষ্য কার্ড — আপাতত static ইনপুট (৫ ওয়াক্ত নামাজ, কুরআন তিলাওয়াত, তাসবিহ, দোয়া)।
+/// 4.3: দৈনিক লক্ষ্য কার্ড — আপাতত static ইনপুট (৫ ওয়াক্ত নামাজ, কুরআন তিলাওয়াত, ত[...]
 /// পরে shared_preferences দিয়ে persist করা যাবে (গ্রুপ ৬-এ)।
 class _DailyGoalsCard extends StatelessWidget {
   const _DailyGoalsCard();
