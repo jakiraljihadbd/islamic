@@ -27,8 +27,46 @@ const _quickActions = [
   _QuickAction('আরো', Icons.apps),
 ];
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  double _lat = 23.8103;
+  double _lng = 90.4125;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLocation();
+  }
+
+  Future<void> _loadLocation() async {
+    try {
+      final permission = await Geolocator.checkPermission();
+      var granted = permission == LocationPermission.always || permission == LocationPermission.whileInUse;
+      if (!granted) {
+        final requested = await Geolocator.requestPermission();
+        granted = requested == LocationPermission.always || requested == LocationPermission.whileInUse;
+      }
+      if (granted && await Geolocator.isLocationServiceEnabled()) {
+        final pos = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium),
+        );
+        if (mounted) {
+          setState(() {
+            _lat = pos.latitude;
+            _lng = pos.longitude;
+          });
+        }
+      }
+    } catch (_) {
+      // location না পেলে ডিফল্ট ঢাকা কোঅর্ডিনেট ব্যবহার হবে।
+    }
+  }
 
   void _onQuickAction(BuildContext context, String label) {
     switch (label) {
@@ -75,7 +113,7 @@ class HomeScreen extends StatelessWidget {
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
             sliver: SliverToBoxAdapter(
-              child: PrayerFlowerWidget(),
+              child: PrayerFlowerWidget(lat: _lat, lng: _lng),
             ),
           ),
           SliverPadding(
@@ -252,7 +290,7 @@ class _NextPrayerCardState extends State<_NextPrayerCard> {
   }
 }
 
-/// 4.2: রোজ একটা fix আয়াত + একটা fix হাদিস দেখায় (তারিখ অনুযায়ী, সারাদিন একই থাকে)।
+/// 4.2: রোজ একটা fix আয়াত + একটা fix হাদিস দেখায় (তারিখ অনুযায়ী, সারাদিন একই থাকে)
 class _DailyVerseHadithCard extends StatefulWidget {
   const _DailyVerseHadithCard();
 
@@ -393,7 +431,7 @@ class _DailyGoalsCard extends StatelessWidget {
 
   static const _goals = [
     _Goal('কুরআন তিলাওয়াত', Icons.menu_book_outlined, 1, 1),
-    _Goal('তাসবিহ (১০০ বার)', Icons.fingerprint, 0, 1),
+    _Goal('তাসবি�� (১০০ বার)', Icons.fingerprint, 0, 1),
     _Goal('সকাল-সন্ধ্যার দোয়া', Icons.volunteer_activism_outlined, 1, 2),
   ];
 
