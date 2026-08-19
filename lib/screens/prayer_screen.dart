@@ -405,7 +405,7 @@ class _PrayerMeta {
   final Color color;
   final IconData icon;
 
-  _PrayerMeta({required this.name, required this.color, required this.icon});
+  const _PrayerMeta({required this.name, required this.color, required this.icon});
 }
 
 // Prayer metadata list
@@ -413,6 +413,6 @@ const List<_PrayerMeta> _prayerMeta = [
   _PrayerMeta(name: 'ফজর', color: Color(0xFF8B4513), icon: Icons.wb_twilight),
   _PrayerMeta(name: 'যোহর', color: Color(0xFFFFC107), icon: Icons.wb_sunny),
   _PrayerMeta(name: 'আসর', color: Color(0xFFFF9800), icon: Icons.cloud),
-  _PrayerMeta(name: 'মাগরিব', color: Color(0xFFFF6F00), icon: Icons.sunset_photos),
+  _PrayerMeta(name: 'মাগরিব', color: Color(0xFFFF6F00), icon: Icons.brightness_4),
   _PrayerMeta(name: 'ইশা', color: Color(0xFF1A237E), icon: Icons.nights_stay),
 ];

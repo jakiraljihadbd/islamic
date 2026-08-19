@@ -110,7 +110,7 @@ class AlarmService {
       await _player.playerStateStream
           .firstWhere(
             (s) => s.processingState == ProcessingState.completed,
-            orElse: () => PlayerState(playing: false, processingState: ProcessingState.idle),
+            orElse: () => PlayerState(false, ProcessingState.idle),
           )
           .timeout(timeout);
     } catch (e) {
@@ -170,10 +170,11 @@ class AlarmService {
     final details = NotificationDetails(android: androidDetails);
     final payload = jsonEncode({'id': id, 'prayerName': prayerName});
 
-    // flutter_local_notifications v18+ removed androidAllowWhileIdle and
-    // uiLocalNotificationDateInterpretation entirely — androidScheduleMode
-    // is now the single way to say "fire at the exact time even if the
-    // device is idle", which is what this azan alarm needs.
+    // flutter_local_notifications v18 removed androidAllowWhileIdle in favor
+    // of androidScheduleMode (which is what actually controls exact-vs-idle
+    // firing now), but uiLocalNotificationDateInterpretation is still a
+    // required parameter at this version even though it's iOS-only/legacy —
+    // it's only dropped in a later major version we're not on yet.
     if (recurring) {
       await _plugin.zonedSchedule(
         id,
@@ -182,6 +183,7 @@ class AlarmService {
         tzDate,
         details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: DateTimeComponents.time,
         payload: payload,
       );
@@ -193,6 +195,7 @@ class AlarmService {
         tzDate,
         details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
         payload: payload,
       );
     }
