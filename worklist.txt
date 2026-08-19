@@ -1,8 +1,29 @@
 IslamicZone — Flutter Conversion Worklist
 ==========================================
-সর্বশেষ আপডেট: Phase-3 সম্পূর্ণ শেষ + UI রিডিজাইন — সালাত ট্র্যাকার এখন রেফারেন্স স্ক্রিনশট
-(অন্য অ্যাপের) এর মতো pill-shaped চিপ ডিজাইনে (আগে ছিল লিস্ট-রো + আলাদা টিক/ক্রস বাটন)।
-পরের ধাপ: Phase-4 — কুরআন পড়া ট্র্যাকার (সময় এবং আয়াত কাউন্ট, প্রফেশনাল ডিসপ্লে)।
+সর্বশেষ আপডেট (২০ আগস্ট ২০২৬): Phase 9.1 / worksalat.txt এর A1 sub-task সম্পন্ন —
+alarm_callback.dart-এ android_alarm_manager_plus ইম্পোর্ট করা ছিল কিন্তু pubspec.yaml-এ
+dependency হিসেবেই যোগ ছিল না (build fail করত), আর AndroidAlarmManager.oneShotAt()
+কোথাও call হতো না বলে azan callback আসলে কখনো ট্রিগারই হতো না (শুধু notification
+দেখাত, আজান বাজত না)। ফিক্স: pubspec.yaml-এ dependency যোগ, main.dart-এ
+AndroidAlarmManager.initialize(), schedulePrayer()/cancelPrayer()-এ আসল
+arm/cancel যোগ, alarm_callback.dart এখন AlarmService.playAzanFromAsset() ব্যবহার
+করে (আগের duplicate AudioPlayer লজিক ও undeclared flutter_foreground_task সরানো
+হয়েছে), setMaxVolume() আলাদা ফাংশন যোগ, AndroidManifest.xml-এ SCHEDULE_EXACT_ALARM
+permission যোগ। বিস্তারিত: worksalat.txt। ⚠️ ডিভাইসে/CI build দিয়ে টেস্ট এখনো বাকি।
+
+পুরনো আপডেট: (১) CI ফিক্স — "Ensure android/ folder exists" স্টেপের চেক
+`[ ! -d "android" ]` থেকে `[ ! -f "android/app/build.gradle(.kts)" ]`-এ বদলানো হয়েছে,
+কারণ কমিট করা AndroidManifest.xml থাকায় android/ ফোল্ডার আগে থেকেই আংশিক আছে, তাই
+পুরনো চেক flutter create স্কিপ করে ফেলত আর পরের স্টেপে build.gradle না পেয়ে
+"No such file or directory" এরর দিয়ে ফেইল করত। (২) Phase-4 — QuranTrackerCard
+(lib/widgets/quran_tracker_card.dart) বানানো হয়েছে, ডেমো হিসেবে (স্টার্ট/পজ স্টপওয়াচ +
+আয়াত +/- কাউন্টার, তারিখ-ভিত্তিক SharedPreferences persist), HomeScreen-এ
+SalatTrackerCard এর নিচে বসানো। অটোমেটিক PDF পেজ-ডিটেকশন যুক্ত করা হয়নি এখনো (আসল Phase-4
+স্কোপের বাকি অংশ, ভবিষ্যতে sub-task)। (৩) TasbihScreen UI রিডিজাইন — কাউন্ট/টোটাল/টার্গেট
+persist লজিক অপরিবর্তিত, নতুন: gradient header + stat সামারি, ৪টা দ্বিক্‌র চিপ (আরবি লেবেল,
+tasbih_dhikr_index দিয়ে persist), বড় tap-anywhere রিং কাউন্টার + bump অ্যানিমেশন।
+পরের ধাপ: Phase-4-এর real পেজ/আয়াত অটো-ডিটেকশন (QuranPdfScreen এর সাথে যুক্ত), অথবা
+Phase-6 Material 3 পলিশ (বাকি স্ক্রিনগুলোতে)।
 
 Phase-3 UI রিডিজাইন বিস্তারিত (এই সেশনে যা হয়েছে):
 - ইউজার একটা রেফারেন্স স্ক্রিনশট দিয়েছে যেখানে সালাত ট্র্যাকার stadium-shaped পিল হিসেবে
@@ -369,9 +390,39 @@ values, menu, mipmap + সব java সোর্স) — এই গ্রুপ�
 === নিয়ম ===
 প্রতি সেশনে এই লিস্ট থেকে ঠিক ১টা sub-task (যেমন শুধু 1.1, বা শুধু 2.3) করতে হবে — পুরো গ্রুপ না।
 
+--- গ্রুপ ৯: প্রার্থনা সময় পর্দা নতুন ডিজাইন + অ্যালার্ম ফাংশনালিটি ---
+নতুন কাজ চালু: ২০ আগস্ট ২০२६
+
+9.1  🟡 কাজ চলছে (UI + A1 সম্পন্ন) — lib/screens/prayer_screen.dart সম্পূর্ণ rewrite
+     - ✅ নতুন UI ডিজাইন (semi-circle progress indicator, পরবর্তী নামাজের সময়)
+     - ✅ প্রতিটা নামাজের row: আইকন + নাম + সময় + alarm toggle switch
+     - ✅ সাদা background, সবুজ highlight (current prayer)
+     - ✅ Active prayer detection logic (_activeIndex)
+     - ✅ Responsive layout
+     - ✅ AlarmService.playAzanFromAsset() উন্নত করা (asset path fix + error handling)
+     - ✅ pubspec.yaml asset path fix (assets/sounds/azan.mp3 → assets/azan.mp3)
+     - ✅ A1: Alarm callback integration সম্পন্ন (সেশন ২) — আসল bug ছিল:
+       android_alarm_manager_plus pubspec.yaml এ dependency হিসেবেই ছিল না (build fail
+       করত), আর AndroidAlarmManager.oneShotAt() কখনো call হতো না তাই azan আসলে
+       বাজতই না, শুধু notification দেখাত। এখন schedulePrayer()/cancelPrayer() উভয়ই
+       আসল background alarm arm/cancel করে, alarm_callback.dart এখন
+       AlarmService.playAzanFromAsset() ব্যবহার করে (নিজস্ব duplicate player logic
+       সরানো হয়েছে), SCHEDULE_EXACT_ALARM permission যোগ হয়েছে। বিস্তারিত: worksalat.txt
+     - ❌ বাকি: ডিভাইসে আসল build দিয়ে টেস্ট (এই সেশনে build/run environment ছিল না)
+     - ❌ বাকি: Android v9 compatibility testing
+     - ❌ বাকি: Notification click handler (মূলত আগে থেকেই main.dart এ আছে, তবে
+       "stop button" ও "playback চলছে কিনা" চেক এখনো নেই — B1/A3 বাকি অংশ)
+
+9.2  ✅ সম্পূর্ণ শেষ (সেশন ৩, ২০ আগস্ট ২০২৬) — Full-screen azan alarm screen +
+     robustness fixes। বিস্তারিত worksalat.txt-এ।
+
+পরবর্তী ধাপ: worksalat.txt দেখুন (Priority: ডিভাইসে আসল build দিয়ে টেস্ট — কোনো
+build/run environment এখনো কোনো সেশনেই ছিল না)
+
 === গুরুত্বপূর্ণ নোট (পরের Claude সেশনের জন্য) ===
 - Package name অবশ্যই com.islamiczone.org রাখতে হবে (Play Store existing app)
 - android/ ফোল্ডার ইচ্ছাকৃতভাবে repo-তে নেই — CI প্রতিবার generate করে (.github/workflows/build.yml দেখুন)
 - Bengali strings/UI text বজায় রাখতে হবে, ইংরেজি না করা
 - মূল রঙ scheme (emerald green #0B6E4F + gold #D4A017) পরিবর্তন করা যাবে না
 - প্রতিটা সেশনের শেষে এই worklist.txt আপডেট করে zip এ দিতে হবে
+- worksalat.txt দেখুন prayer screen alarm implementation details এর জন্য

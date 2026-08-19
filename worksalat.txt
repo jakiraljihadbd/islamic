@@ -1,0 +1,332 @@
+═══════════════════════════════════════════════════════════════════════════════
+                        ISLAMIC ZONE - SALAT SCREEN
+                          উন্নয়ন কাজের তালিকা
+═══════════════════════════════════════════════════════════════════════════════
+
+সেশন: ১ (UI + Alarm infra) — সম্পন্ন
+সেশন: ২ (A1: Alarm Callback Implementation) — সম্পন্ন, তারিখ: ২০ আগস্ট ২০২৬
+সেশন: ৩ (9.2: Full-screen alarm UI + সব ফোনে reliability) — সম্পন্ন, তারিখ: ২০ আগস্ট ২০২৬
+
+═══════════════════════════════════════════════════════════════════════════════
+✅ সেশন ৩ এ সম্পন্ন — 9.2: Full-Screen Azan Alarm Screen + Reliability
+═══════════════════════════════════════════════════════════════════════════════
+
+ইউজার একটা রেফারেন্স স্ক্রিনশট দিয়ে বলেছিল আজানের সময় এমন একটা ফুল-স্ক্রিন পর্দা
+আসুক (অ্যালার্ম ক্লক/ইনকামিং কল অ্যাপের মতো), যেটা "সব ফোনেই কার্যকরী" হয় ও আলার্ম
+"শক্তিশালী" হয়। এই সেশনে যা করা হয়েছে:
+
+⚠️ গুরুত্বপূর্ণ আবিষ্কার — প্রজেক্ট আসলে কম্পাইলই হতো না:
+  - lib/main.dart এ `runApp(const IslamicZoneApp())` কল ছিল, কিন্তু
+    `IslamicZoneApp` ক্লাস পুরো রিপোতে কোথাও ডিফাইনড ছিল না (lib/app.dart
+    ফাইলটাই ছিল না)। মানে এটা এই মুহূর্তে বিল্ড করলে compile error দিত।
+  - android/app/src/main/AndroidManifest.xml এ `<activity>` ট্যাগই ছিল না
+    (কোনো MainActivity ডিক্লেয়ার করা ছিল না, LAUNCHER intent-filter ছিল না,
+    flutterEmbedding meta-data ছিল না) — এটা থাকলে অ্যাপ ইনস্টল হলেও launcher
+    থেকে ওপেনই হতো না।
+  - একই manifest এ `android:name=".Application"` (কাস্টম Application ক্লাস)
+    রেফার করা ছিল, কিন্তু android/ এ কোনো Application.kt/java ফাইল নেই —
+    এটা থাকলে অ্যাপ চালু হওয়ার সাথে সাথেই ClassNotFoundException দিয়ে ক্র্যাশ
+    করত। সরিয়ে ফেলা হয়েছে (দরকার নেই, ডিফল্ট Application যথেষ্ট)।
+  এই তিনটাই এই সেশনে ফিক্স করা হয়েছে — এখন app.dart এ IslamicZoneApp আছে,
+  manifest এ সঠিক MainActivity + launcher intent-filter + flutterEmbedding
+  meta-data আছে।
+
+1. Full-screen alarm UI (নতুন ফাইল)
+   ✅ lib/screens/azan_alarm_screen.dart — AzanAlarmScreen widget তৈরি করা
+      হয়েছে: নামাজের নাম (বড় টেক্সট), লাইভ ঘড়ি, পালসিং মসজিদ আইকন
+      (Icons.mosque), "আজান বন্ধ করুন" বাটন। ব্র্যান্ডের emerald/gold রঙ
+      (AppColors.primaryDark background, AppColors.secondary বাটন) ব্যবহার
+      করা হয়েছে — রেফারেন্স স্ক্রিনশটের এক্সাক্ট ডিজাইন কপি করা হয়নি, শুধু
+      "ফুল-স্ক্রিন অ্যালার্ম" কনসেপ্টটা অনুসরণ করা হয়েছে।
+      - PopScope দিয়ে ব্যাক বাটন/সোয়াইপ দিয়ে চুপচাপ বন্ধ করা আটকানো হয়েছে —
+        Stop বাটন চাপলেই তবে বন্ধ হয়।
+      - Stop বাটন চাপলে: AlarmService.stopAzan() (audio থামায়) +
+        dismissNotification() (notification সরায়) + haptic feedback।
+
+2. Full-screen intent notification (alarm_service.dart)
+   ✅ AndroidNotificationDetails এ fullScreenIntent:true,
+      category: AndroidNotificationCategory.alarm, priority: Priority.max,
+      visibility: public, ongoing:true — এগুলোই আসল অ্যালার্ম-ক্লক অ্যাপের
+      মতো লক-স্ক্রিনের উপরে স্ক্রিন জাগিয়ে দেখানোর মেকানিজম।
+   ✅ নোটিফিকেশনে ইনলাইন "বন্ধ করুন" action button (kStopAzanActionId) —
+      কিছু OEM (MIUI/ColorOS ইত্যাদি) battery-optimized অ্যাপে
+      fullScreenIntent suppress করে, তখনও এই বাটন দিয়ে অন্তত বন্ধ করা যাবে।
+   ✅ payload হিসেবে JSON ({id, prayerName}) পাঠানো হচ্ছে যাতে
+      notification tap/launch এ কোন নামাজের অ্যালার্ম সেটা বোঝা যায়।
+   ✅ AlarmService.stopAzan(), dismissNotification(), getLaunchPayload(),
+      isPlaying, requestIgnoreBatteryOptimizations() — নতুন public methods।
+
+3. Navigation wiring (main.dart + app.dart নতুন)
+   ✅ main.dart এ getNotificationAppLaunchDetails() চেক করে cold-start এ
+      সরাসরি AzanAlarmScreen এ ঢোকে (RootShell flash করে না)।
+   ✅ onDidReceiveNotificationResponse এ: actionId == STOP_AZAN হলে সরাসরি
+      audio বন্ধ করে; নাহলে rootNavigatorKey দিয়ে AzanAlarmScreen push করে
+      (app আগে থেকে চলমান থাকলে এই path ব্যবহার হয়)।
+   ✅ app.dart এ global rootNavigatorKey — background callback থেকে
+      BuildContext ছাড়াই navigate করার জন্য।
+
+4. Reliability ("সব ফোনেই কার্যকরী") — battery optimization
+   ✅ AlarmService.requestIgnoreBatteryOptimizations() — permission_handler
+      এর Permission.ignoreBatteryOptimizations ব্যবহার করে। prayer_screen.dart
+      এ যখন ইউজার প্রথম কোনো নামাজের alarm toggle অন করে তখন একবার call হয়।
+      Xiaomi/Oppo/Vivo/Samsung এর মতো aggressive battery-saver থাকা ফোনে এই
+      exemption ছাড়া background alarm প্রায়ই silently মেরে ফেলে।
+   ✅ AndroidManifest.xml এ USE_FULL_SCREEN_INTENT ও
+      REQUEST_IGNORE_BATTERY_OPTIMIZATIONS permission যোগ করা হয়েছে।
+   ✅ MainActivity এ android:showWhenLocked="true" ও android:turnScreenOn="true"
+      attribute যোগ (Android 8.1+ এ লক স্ক্রিনের উপর অ্যাক্টিভিটি দেখানোর
+      জন্য আবশ্যক)।
+
+⚠️ এখনো টেস্ট করা যায়নি (এই সেশনেও build/run environment ছিল না) — পরের
+   সেশনে/ইউজারের ডিভাইসে আসল Android বিল্ড দিয়ে verify করা দরকার।
+
+⚠️ যেহেতু android/ এর বেশিরভাগ ফাইল (build.gradle, MainActivity.kt,
+   styles.xml, res/values ইত্যাদি) CI এর `flutter create` স্টেপ থেকে জেনারেট
+   হয় (শুধু AndroidManifest.xml রিপোতে আছে), এই সেশনের manifest এ
+   @style/LaunchTheme ও @style/NormalTheme রেফারেন্স করা হয়েছে ধরে নিয়ে যে
+   flutter create ডিফল্ট styles.xml জেনারেট করবে — এটা স্ট্যান্ডার্ড flutter
+   টেমপ্লেট প্যাটার্ন, কিন্তু প্রথম আসল CI বিল্ডে এটা কনফার্ম করে দেখা উচিত।
+
+═══════════════════════════════════════════════════════════════════════════════
+
+═══════════════════════════════════════════════════════════════════════════════
+✅ সেশন ২ এ সম্পন্ন — A1: Alarm Callback Implementation
+═══════════════════════════════════════════════════════════════════════════════
+
+গুরুত্বপূর্ণ বাগ পাওয়া গেছে ও ফিক্স করা হয়েছে: lib/services/alarm_callback.dart এ
+`android_alarm_manager_plus` প্যাকেজ import করা ছিল, কিন্তু pubspec.yaml এ dependency
+হিসেবে যোগই করা ছিল না — এই অবস্থায় প্রজেক্ট build ই হতো না। এছাড়া
+AlarmService.schedulePrayer() শুধু flutter_local_notifications দিয়ে notification
+show করত, কিন্তু android_alarm_manager_plus.oneShotAt() কখনো call করা হতো না —
+মানে alarmCallback() (যেটা আজান বাজায়) আসলে কখনো ট্রিগারই হতো না, শুধু নোটিফিকেশন
+দেখাতো, আজান বাজত না।
+
+ফিক্স করা হয়েছে:
+1. pubspec.yaml এ android_alarm_manager_plus: ^4.0.4 dependency যোগ করা হয়েছে।
+2. lib/main.dart এ AndroidAlarmManager.initialize() যোগ করা হয়েছে (AlarmService.init()
+   ও restoreAlarmsFromPrefs() এর আগে — scheduling করার আগে init বাধ্যতামূলক)।
+3. lib/services/alarm_service.dart এর schedulePrayer() এখন zonedSchedule() (visible
+   notification) এর পাশাপাশি AndroidAlarmManager.oneShotAt(exact:true, wakeup:true,
+   rescheduleOnReboot:true) ও call করে — এটাই আসল ট্রিগার যা background isolate এ
+   alarmCallback() রান করিয়ে আজান বাজায়। cancelPrayer() ও এখন AndroidAlarmManager.cancel()
+   call করে (আগে শুধু notification cancel হতো, alarm না)।
+4. lib/services/alarm_service.dart এ setMaxVolume() নামে আলাদা ফাংশন যোগ করা হয়েছে
+   (playAzanFromAsset() এখন এটা call করে) — worksalat.txt এর "volume max ফাংশন" চাহিদা।
+5. lib/services/alarm_callback.dart সম্পূর্ণ rewrite — নিজস্ব AudioPlayer duplicate লজিক
+   সরিয়ে এখন AlarmService.instance.playAzanFromAsset() call করে (worksalat.txt এর চাহিদা
+   অনুযায়ী)। flutter_foreground_task ব্যবহার সরানো হয়েছে — সেটাও pubspec.yaml এ ছিল না,
+   এবং তার জন্য AndroidManifest.xml এ <service> ট্যাগ দরকার হতো যেটাও ছিল না। স্কোপ ছোট
+   রাখতে ও build নিশ্চিত করতে foreground service বাদ দেওয়া হয়েছে (WAKE_LOCK permission
+   আগে থেকেই আছে, AndroidAlarmManager এর wakeup:true নিজেই device জাগায়)।
+6. android/app/src/main/AndroidManifest.xml এ SCHEDULE_EXACT_ALARM permission যোগ করা
+   হয়েছে (Android 12/API 31+ এ exact:true alarm এর জন্য প্রয়োজনীয়, না থাকলে exact
+   scheduling silently fail করতে পারে বা ঠিক সময়ে ফায়ার নাও করতে পারে)।
+
+⚠️ এখনো টেস্ট করা যায়নি (কোনো build/run environment এই সেশনে ছিল না) — পরের সেশনে/
+ইউজারের ডিভাইসে আসল Android বিল্ড দিয়ে verify করা দরকার (নিচের Testing Workflow দেখুন)।
+
+═══════════════════════════════════════════════════════════════════════════════
+✅ সেশন ১ এ সম্পন্ন:
+═══════════════════════════════════════════════════════════════════════════════
+
+1. UI Design
+   ✅ নতুন prayer_screen.dart সম্পূর্ণ রিডিজাইন
+   ✅ Semi-circle progress indicator (সাদা background arc + সবুজ progress arc)
+   ✅ শীর্ষে বর্তমান/পরবর্তী নামাজের সময় ডিসপ্লে
+   ✅ প্রতিটা নামাজের জন্য row layout:
+      - আইকন (রঙিন, ছোট আইকন)
+      - নামাজের নাম + সময়
+      - Toggle switch (alarm on/off)
+   ✅ সাদা background + সবুজ হাইলাইট (current prayer)
+   ✅ Responsive design - small screens এ wrap করবে
+
+2. Alarm Infrastructure
+   ✅ alarm_service.dart আপডেট করা হয়েছে:
+      - Asset path ঠিক করা: 'assets/sounds/azan.mp3' → 'assets/azan.mp3'
+      - playAzanFromAsset() method উন্নত করা (timeout + error handling)
+   ✅ pubspec.yaml asset path ঠিক করা
+   ✅ AlarmService.schedulePrayer() existing logic ব্যবহার করা হচ্ছে
+
+3. State Management
+   ✅ _toggles list দিয়ে প্রতিটা prayer এর alarm state track করা
+   ✅ SharedPreferences integration (alarm_enabled_${index})
+   ✅ Active prayer detection logic (_activeIndex)
+
+═══════════════════════════════════════════════════════════════════════════════
+❌ এখনো বাকি (পরবর্তী সেশনে করতে হবে):
+═══════════════════════════════════════════════════════════════════════════════
+
+PHASE A: Alarm Notification + Sound Playback (অগ্রাধিকার সর্বোচ্চ)
+──────────────────────────────────────────────────────────────
+
+A1. Alarm Callback Implementation ✅ সম্পূর্ণ (সেশন ২, উপরে বিস্তারিত দেখুন)
+    - [✓] notification দেখানো
+    - [✓] AlarmService.playAzanFromAsset() call করা (alarm_callback.dart থেকে)
+    - [✓] অডিও volume max করা আলাদা ফাংশন (setMaxVolume())
+    - [✓] আসল trigger যোগ করা (আগে ছিলই না — AndroidAlarmManager.oneShotAt())
+    - [ ] Test করা: alarm set → ১ মিনিট অপেক্ষা → notification আসে → azan বাজে
+      (এই সেশনে build/run environment ছিল না, ডিভাইসে টেস্ট বাকি)
+
+A2. Android v9 Compatibility
+    - Test করা Android v9 এ alarm scheduling কাজ করছে কি না
+    - android/app/build.gradle এ minSdkVersion >= 21 check করা
+    - android/app/AndroidManifest.xml এ প্রয়োজনীয় permissions যাচাই করা:
+      [✓] SCHEDULE_EXACT_ALARM (সেশন ২ তে A1 এর অংশ হিসেবে যোগ করা হয়েছে)
+      ✗ VIBRATE
+      ✗ WAKE_LOCK (আগে থেকেই আছে, শুধু "optional deep-sleep wake" behavior verify বাকি)
+    - just_audio compatibility চেক করা (v0.9.33 Android 5+ সাপোর্ট করে)
+
+A3. Notification Click Handler ✅ সম্পূর্ণ (সেশন ৩, উপরে বিস্তারিত দেখুন)
+    - [✓] onDidReceiveNotificationResponse callback setup করা
+    - User যখন notification tap করে (বা fullScreenIntent এ স্ক্রিন জাগে):
+      [✓] AzanAlarmScreen (full-screen) খোলে
+      [✓] Azan playback আগে থেকেই চলছে (screen খোলার সাথে সাথে শুরু হয়)
+      [✓] Stop button দেখায় (AzanAlarmScreen এর মূল বাটন)
+
+PHASE B: Enhanced Playback Features
+──────────────────────────────────────
+
+B1. Azan Duration Control
+    - Max playback time set করা (default 3 minutes - ইতিমধ্যে আছে)
+    - Stop button implementation:
+      ✗ playAzanFromAsset() play করার সময় return করা একটা function
+      ✗ Button tap → function call → stop playback
+      ✗ state update → button disappear
+
+B2. Volume Control
+    - Device volume max করা (alarm playback শুরুর আগে)
+    - Volume restore করা (playback শেষ করার পর / 3 min timeout এর পর)
+    - Code: AudioManager / SystemSound handling এর জন্য platform channel
+      (Flutter alone करতে পারে না - android/ এ Kotlin/Java code দরকার)
+
+B3. Snooze Functionality (Optional)
+    - Snooze button notification এ যোগ করা (5/10 min options)
+    - Android NotificationAction setup করা
+
+PHASE C: UI Polish + UX Improvements
+──────────────────────────────────────
+
+C1. Haptic Feedback
+    - Toggle switch tap → vibration (HapticFeedback.mediumImpact())
+    - Azan playback start → vibration pattern
+
+C2. Animation Polish
+    - Semi-circle arc smooth fill animation
+    - Prayer row active state transition animation
+    - Progress indicator real-time update (every second)
+
+C3. Settings Screen Integration
+    - Alarm tone selection (যদি একাধিক tone থাকে)
+    - Volume level control
+    - Auto-stop time setting
+    - Notification style settings
+
+PHASE D: Testing + Bug Fixes
+──────────────────────────────────────
+
+D1. Android v9 Specific Testing
+    - Itel S15 Pro Vision (Android 9 Go) এ test করা
+    - Notification sound playback verify করা
+    - Background alarm trigger verify করা
+    - Low RAM condition handle করা
+
+D2. Device Compatibility
+    - Min 5+ devices এ test করা
+    - Different screen sizes (small phone, tablet)
+    - Landscape orientation
+
+D3. Edge Cases
+    - Alarm set করার পর device restart → alarm restore হয় কি?
+    - Multiple alarms একই সময়ে → conflict handling
+    - Alarm set → app close → device lock → alarm should still trigger
+    - Notification dismiss → azan automatic stop
+
+═══════════════════════════════════════════════════════════════════════════════
+🎯 পরবর্তী সেশনের জন্য অগ্রাধিকার:
+═══════════════════════════════════════════════════════════════════════════════
+
+Priority 1: A1 + A2 সম্পূর্ণ করা (Alarm + Azan Playback working)
+Priority 2: A3 + B1 করা (Notification click + Stop button)
+Priority 3: D1 Android v9 এ full test করা
+
+═══════════════════════════════════════════════════════════════════════════════
+📝 Code Notes for Next Session:
+═══════════════════════════════════════════════════════════════════════════════
+
+1. AlarmService.playAzanFromAsset() এখন ঠিক করা আছে - just run it when alarm fires
+
+2. alarm_callback.dart এ এই মোডিফাই করা দরকার:
+   ```dart
+   // In onAlarm callback:
+   - Check prayer_name from SharedPreferences
+   - Show notification (already done)
+   - Call AlarmService.instance.playAzanFromAsset()
+   ```
+
+3. Android manifest permissions দরকার:
+   - SCHEDULE_EXACT_ALARM (API 31+)
+   - VIBRATE
+   - RECEIVE_BOOT_COMPLETED (app restart এর পর alarm restore করতে)
+
+4. pubspec.yaml dependencies ঠিক আছে - কোনো নতুন add করা লাগবে না
+
+5. Just_audio volume control:
+   ```dart
+   await _player.setVolume(1.0);  // Max volume
+   ```
+
+6. Platform Channel দরকার হতে পারে device volume control এর জন্য
+   (AudioManager.java) - optional, basic implementation যদি work করে
+
+═══════════════════════════════════════════════════════════════════════════════
+💡 Testing Workflow (Android v9 এ):
+═══════════════════════════════════════════════════════════════════════════════
+
+1. App start → PrayerScreen open করা
+2. যোহর নামাজের alarm toggle on করা
+3. একটা কাছের সময়ে alarm test করতে:
+   - Android Settings → Date & Time → adjust করা
+   - Or manually alarm time trigger করা test এ
+4. Notification appear হওয়ার অপেক্ষা করা
+5. Azan sound বাজার কথা লক্ষ্য করা
+6. 3 min পর automatic stop হওয়ার verify করা
+7. Notification tap → app open → SnackBar দেখানোর check করা
+
+═══════════════════════════════════════════════════════════════════════════════
+📦 Files Modified in This Session:
+═══════════════════════════════════════════════════════════════════════════════
+
+1. lib/screens/prayer_screen.dart - সম্পূর্ণ rewrite
+   - New UI with semi-circle progress
+   - Prayer list with toggle switches
+   - Active prayer detection
+
+2. lib/services/alarm_service.dart - playAzanFromAsset() improved
+   - Correct asset path
+   - Better error handling
+   - 3 min timeout
+
+3. pubspec.yaml - asset path fixed
+   - assets/azan.mp3 correct path
+
+═══════════════════════════════════════════════════════════════════════════════
+✨ Current Implementation Quality:
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ UI/UX: 70% complete
+   - Design matching reference screenshot ✓
+   - Responsive layout ✓
+   - Active prayer highlighting ✓
+   - Missing: animations, polish
+
+✅ Alarm Logic: 40% complete
+   - Scheduling framework ✓
+   - State persistence ✓
+   - Missing: callback implementation, sound playback trigger
+
+✅ Audio: 20% complete
+   - playAzanFromAsset() method ready ✓
+   - Asset path fixed ✓
+   - Missing: actual trigger on alarm fire, volume control
+
+═══════════════════════════════════════════════════════════════════════════════
