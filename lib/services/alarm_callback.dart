@@ -18,6 +18,13 @@ import 'alarm_service.dart';
 /// isolate callback টা তার পাশাপাশি একটা backup হিসেবে থেকে যাচ্ছে — যদি
 /// কোনো কারণে fullScreenIntent কাজ না করে (কিছু OEM এ), তাহলেও অন্তত আজানের
 /// শব্দ বাজবে।
+// CRITICAL: without this pragma, Dart's release-mode tree shaker/AOT
+// compiler can strip this function since nothing in the main isolate
+// appears to call it directly (it's only ever invoked by native code in
+// a background isolate). Without the annotation, azan alarms can silently
+// stop firing specifically in release APKs — the exact build this CI
+// pipeline produces — while still working fine in debug runs.
+@pragma('vm:entry-point')
 Future<void> alarmCallback(int id) async {
   WidgetsFlutterBinding.ensureInitialized();
 

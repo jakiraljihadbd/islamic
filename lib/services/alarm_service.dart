@@ -57,9 +57,23 @@ class AlarmService {
       playSound: true,
     );
 
-    await _plugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(channel);
+    final androidPlugin = _plugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+
+    await androidPlugin?.createNotificationChannel(channel);
+
+    // Android 13+ (API 33+) hides all notifications, including the azan
+    // alarm's fullScreenIntent one, until POST_NOTIFICATIONS is granted at
+    // runtime — declaring it in the manifest alone is not enough.
+    await androidPlugin?.requestNotificationsPermission();
+
+    // Android 12+ requires the user to explicitly grant exact-alarm access
+    // (it's a special access toggle in system settings, not a normal
+    // runtime dialog); on Android 14+ it's denied by default. Without this,
+    // schedulePrayer()'s zonedSchedule with exactAllowWhileIdle can throw a
+    // SecurityException or silently degrade to an inexact/delayed alarm —
+    // which defeats the point of an azan alarm.
+    await androidPlugin?.requestExactAlarmsPermission();
   }
 
   /// Ask the user to exempt the app from battery optimization. Many Android
@@ -156,6 +170,10 @@ class AlarmService {
     final details = NotificationDetails(android: androidDetails);
     final payload = jsonEncode({'id': id, 'prayerName': prayerName});
 
+    // flutter_local_notifications v18+ removed androidAllowWhileIdle and
+    // uiLocalNotificationDateInterpretation entirely — androidScheduleMode
+    // is now the single way to say "fire at the exact time even if the
+    // device is idle", which is what this azan alarm needs.
     if (recurring) {
       await _plugin.zonedSchedule(
         id,
@@ -163,8 +181,7 @@ class AlarmService {
         '$prayerName এর সময় হয়েছে',
         tzDate,
         details,
-        androidAllowWhileIdle: true,
-        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         matchDateTimeComponents: DateTimeComponents.time,
         payload: payload,
       );
@@ -175,8 +192,7 @@ class AlarmService {
         '$prayerName এর সময় হয়েছে',
         tzDate,
         details,
-        androidAllowWhileIdle: true,
-        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         payload: payload,
       );
     }

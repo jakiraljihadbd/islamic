@@ -29,10 +29,10 @@ dependencies:
   adhan: ^2.0.0
 
   # HTTP client for Aladhan API
-  http: ^0.13.6
+  http: ^1.2.0
 
   # Local notifications / alarm scheduling
-  flutter_local_notifications: ^12.0.4
+  flutter_local_notifications: ^18.0.1
 
   # Background alarm firing (actually wakes the app to play azan at prayer time)
   android_alarm_manager_plus: ^4.0.4
@@ -44,7 +44,7 @@ dependencies:
   timezone: ^0.9.0
 
   # Internationalization / formatting
-  intl: ^0.17.0
+  intl: ^0.19.0
 
   # Optional: Google fonts (for Bengali if desired)
   google_fonts: ^5.0.0
