@@ -5,6 +5,9 @@ on:
     branches: [ main ]
   workflow_dispatch: {}
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -94,3 +97,14 @@ jobs:
         with:
           name: islamic-zone-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Publish latest APK as GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-apk
+          name: "Latest APK"
+          body: "Auto-updated on every push to main."
+          files: build/app/outputs/flutter-apk/app-release.apk
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
