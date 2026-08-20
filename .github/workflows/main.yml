@@ -97,9 +97,13 @@ jobs:
             sed -i -E 's/compileSdk[[:space:]]*=[[:space:]]*flutter\.compileSdkVersion/compileSdk = 36/' "$f"
             sed -i -E 's/compileSdkVersion[[:space:]]+[0-9]+/compileSdkVersion 36/' "$f"
             sed -i -E 's/compileSdk[[:space:]]*=[[:space:]]*[0-9]+/compileSdk = 36/' "$f"
+            sed -i -E 's/compileSdk[[:space:]]+[0-9]+/compileSdk 36/' "$f"
             COUNT=$((COUNT+1))
           done < <(find "$PUB_CACHE_DIR/hosted" -path "*/android/build.gradle*" -print0 2>/dev/null)
           echo "Patched $COUNT plugin build.gradle file(s) to compileSdk 36"
+          echo "--- Verifying just_audio ---"
+          grep -rn "compileSdk" "$PUB_CACHE_DIR"/hosted/pub.dev/just_audio-*/android/build.gradle* 2>/dev/null || true
+          grep -rn "compileSdk" "$PUB_CACHE_DIR"/hosted/pub.dev/audio_session-*/android/build.gradle* 2>/dev/null || true
 
       - name: Generate app launcher icon
         run: dart run flutter_launcher_icons
