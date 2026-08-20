@@ -89,7 +89,7 @@ class _SalatTrackerCardState extends State<SalatTrackerCard> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('আজকের সালাত',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w400)),
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -103,7 +103,7 @@ class _SalatTrackerCardState extends State<SalatTrackerCard> {
                     '$doneCount/৫ আদায়',
                     style: TextStyle(
                       fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
                       color: allDone ? AppColors.success : AppColors.primary,
                     ),
                   ),
@@ -117,18 +117,36 @@ class _SalatTrackerCardState extends State<SalatTrackerCard> {
                 child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
               )
             else
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _salatEntries
-                    .map(
-                      (e) => _SalatPill(
-                        entry: e,
-                        status: _status[e.id] ?? _SalatStatus.none,
-                        onTap: () => _cycle(e.id),
+              // 10.7 (ফিক্স): আগে প্রতিটা পিলের ভেতরে আলাদা FittedBox ছিল, ফলে
+              // "মাগরিব"-এর মতো লম্বা লেবেলওয়ালা পিল বেশি scale-down হতো আর ছোট
+              // লেবেলওয়ালা পিল (যেমন "আসর") কম — ৫টা পিল ভিন্ন সাইজে দেখাত। এখন
+              // পুরো Row-টাকে একটামাত্র বাইরের FittedBox দিয়ে মোড়ানো হয়েছে, তাই
+              // সবগুলো পিল একই স্কেল-ফ্যাক্টরে ছোট/বড় হয় — সব সময় সমান সাইজ।
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  return SizedBox(
+                    width: constraints.maxWidth,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: _salatEntries
+                            .map(
+                              (e) => Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                child: _SalatPill(
+                                  entry: e,
+                                  status: _status[e.id] ?? _SalatStatus.none,
+                                  onTap: () => _cycle(e.id),
+                                ),
+                              ),
+                            )
+                            .toList(),
                       ),
-                    )
-                    .toList(),
+                    ),
+                  );
+                },
               ),
           ],
         ),
@@ -173,13 +191,13 @@ class _SalatPill extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(22),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.fromLTRB(12, 6, 6, 6),
+        padding: const EdgeInsets.fromLTRB(8, 6, 5, 6),
         decoration: BoxDecoration(
           color: fill,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(22),
           border: Border.all(color: border, width: 1.2),
         ),
         child: Row(
@@ -188,18 +206,18 @@ class _SalatPill extends StatelessWidget {
             Text(
               entry.label,
               style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
                 color: textColor,
               ),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 5),
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              width: 20,
-              height: 20,
+              width: 17,
+              height: 17,
               decoration: BoxDecoration(color: badgeBg, shape: BoxShape.circle),
-              child: Icon(badgeIcon, size: 13, color: badgeIconColor),
+              child: Icon(badgeIcon, size: 11, color: badgeIconColor),
             ),
           ],
         ),

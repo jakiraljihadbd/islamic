@@ -3,6 +3,8 @@
     package="com.islamiczone.org">
 
     <!-- Core permissions -->
+    <!-- 10.2: geocoding প্যাকেজ (lat/lng → জেলার নাম) এবং http (Aladhan API) এর জন্য দরকার -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />

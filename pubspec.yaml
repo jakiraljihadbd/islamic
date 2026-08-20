@@ -19,8 +19,9 @@ dependencies:
   geolocator: ^13.0.2
   permission_handler: ^11.3.1
 
-  # Quran PDF viewer
-  syncfusion_flutter_pdfviewer: ^34.2.3
+  # (APK সাইজ অপটিমাইজেশন: syncfusion_flutter_pdfviewer + বান্ডেল quran.pdf সরানো
+  # হয়েছে — ৪.২MB PDF + viewer প্যাকেজ APK সাইজে অনেকখানি যোগ করছিল। কুরআন পেজ
+  # আপাতত খালি রাখা হয়েছে, দেখুন lib/screens/quran_reader_screen.dart)
 
   # Tasbih counter persistence, saved settings
   shared_preferences: ^2.2.3
@@ -52,12 +53,19 @@ dependencies:
   # অ্যাপ ক্র্যাশ হলে কারণ ফাইলে লিখে রাখার জন্য
   path_provider: ^2.1.4
 
+  # lat/lng থেকে জেলা/শহরের নাম বের করার জন্য (10.2, বিসমিল্লাহ ফ্রেমে লোকেশন দেখাতে)
+  geocoding: ^3.0.0
+
+  # splash fix: preserve()/remove() রানটাইম API লাগে (শুধু icon/splash asset
+  # জেনারেট করার build-time টুল হিসেবে না — তাই dev_dependencies থেকে সরিয়ে
+  # এখানে আনা হয়েছে, নাহলে lib/main.dart এ import করলে build fail করত)
+  flutter_native_splash: ^2.4.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
   flutter_launcher_icons: ^0.14.1
-  flutter_native_splash: ^2.4.1
 
 flutter_launcher_icons:
   android: true
@@ -80,8 +88,16 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/quran.pdf
     - assets/images/
+    # 10.1 ফিক্স: Flutter-এ folder asset entry শুধু ওই ফোল্ডারের সরাসরি ভেতরের ফাইল
+    # bundle করে, sub-folder recursive না — তাই আগে "assets/images/" একাই লেখা থাকায়
+    # নিচের সাব-ফোল্ডারের ইমেজ/আইকনগুলো আসলে build-এ কখনো যুক্তই হতো না (রানটাইমে
+    # errorBuilder ফলব্যাকে চলে যেত বা কিছু শো করত না)। প্রতিটা সাব-ফোল্ডার এখন আলাদাভাবে
+    # লিস্ট করা হলো। নতুন সাব-ফোল্ডার যোগ হলে এখানেও লাইন যোগ করতে হবে।
+    - assets/images/flower/
+    - assets/images/menu/
+    - assets/images/nav/
+    - assets/images/qibla/
     - assets/data/
     - assets/icon/
     - assets/azan.mp3

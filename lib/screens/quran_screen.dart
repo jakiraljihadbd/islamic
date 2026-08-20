@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/surah.dart';
 import '../theme/app_colors.dart';
-import 'quran_pdf_screen.dart';
+import 'quran_reader_screen.dart';
 
 class QuranScreen extends StatefulWidget {
   const QuranScreen({super.key});
@@ -55,14 +55,11 @@ class _QuranScreenState extends State<QuranScreen> {
                       child: Text('${s.number}', style: const TextStyle(color: AppColors.primary)),
                     ),
                     title: Text(s.nameBengali),
-                    subtitle: Text(
-                      '${s.nameArabic}  •  আয়াত ${s.ayahs}  •  ${s.revelationType}'
-                      '${s.pageEstimated ? '  •  পেজ আনুমানিক' : ''}',
-                    ),
+                    subtitle: Text('${s.nameArabic}  •  আয়াত ${s.ayahs}  •  ${s.revelationType}'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => QuranPdfScreen(surahIndex: s.number, jumpToPage: s.pdfPage),
+                        builder: (_) => QuranReaderScreen(surahIndex: s.number, surahName: s.nameBengali),
                       ),
                     ),
                   ),

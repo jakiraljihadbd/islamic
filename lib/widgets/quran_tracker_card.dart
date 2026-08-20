@@ -6,9 +6,9 @@ import '../theme/app_colors.dart';
 /// Phase-4 (ডেমো): আজকের কুরআন তিলাওয়াত ট্র্যাকার — পড়ার সময় (স্টপওয়াচ) আর
 /// আয়াত সংখ্যা (ম্যানুয়াল +/-) ট্র্যাক করে, তারিখ-ভিত্তিক key দিয়ে
 /// shared_preferences এ persist হয় (SalatTrackerCard এর প্যাটার্ন অনুসরণ করে)।
-/// এটা "ডেমো" কারণ QuranPdfScreen-এর সাথে অটোমেটিক পেজ/আয়াত ডিটেকশন যুক্ত
-/// করা হয়নি এখনো — সময় ও আয়াত সংখ্যা ইউজার নিজে স্টার্ট/স্টপ ও +/- দিয়ে
-/// আপডেট করে, ডেটা real ভাবে সেভ থাকে।
+/// এটা "ডেমো" কারণ কুরআন রিডারের সাথে অটোমেটিক পেজ/আয়াত ডিটেকশন যুক্ত
+/// করা হয়নি এখনো (PDF viewer সরিয়ে ফেলা হয়েছে, APK সাইজ কমানোর জন্য) — সময়
+/// ও আয়াত সংখ্যা ইউজার নিজে স্টার্ট/স্টপ ও +/- দিয়ে আপডেট করে, ডেটা real ভাবে সেভ থাকে।
 class QuranTrackerCard extends StatefulWidget {
   const QuranTrackerCard({super.key});
 
@@ -96,7 +96,7 @@ class _QuranTrackerCardState extends State<QuranTrackerCard> {
             ],
           ),
         ),
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -106,7 +106,7 @@ class _QuranTrackerCardState extends State<QuranTrackerCard> {
                 Row(
                   children: [
                     const Text('আজকের তিলাওয়াত',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400)),
                     const SizedBox(width: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -117,15 +117,16 @@ class _QuranTrackerCardState extends State<QuranTrackerCard> {
                       child: const Text('ডেমো',
                           style: TextStyle(
                               fontSize: 9,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w600,
                               color: AppColors.secondaryVariant)),
                     ),
                   ],
                 ),
-                Icon(Icons.auto_stories_outlined, color: AppColors.primary.withValues(alpha: 0.6)),
+                Icon(Icons.auto_stories_outlined,
+                    size: 18, color: AppColors.primary.withValues(alpha: 0.6)),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 10),
             if (!_loaded)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 20),
@@ -140,8 +141,8 @@ class _QuranTrackerCardState extends State<QuranTrackerCard> {
                       label: 'সময়',
                       value: _formattedTime,
                       trailing: SizedBox(
-                        height: 34,
-                        width: 34,
+                        height: 30,
+                        width: 30,
                         child: IconButton(
                           padding: EdgeInsets.zero,
                           style: IconButton.styleFrom(
@@ -151,7 +152,7 @@ class _QuranTrackerCardState extends State<QuranTrackerCard> {
                           ),
                           icon: Icon(
                             _running ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                            size: 18,
+                            size: 16,
                             color: _running ? AppColors.error : AppColors.primary,
                           ),
                           onPressed: _toggleRunning,
@@ -200,7 +201,7 @@ class _StatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+      padding: const EdgeInsets.fromLTRB(10, 8, 8, 8),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
@@ -208,16 +209,16 @@ class _StatTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: AppColors.primary),
-          const SizedBox(width: 8),
+          Icon(icon, size: 16, color: AppColors.primary),
+          const SizedBox(width: 7),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w400, color: Colors.grey[600])),
                 Text(value,
-                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -239,13 +240,13 @@ class _MiniButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        width: 26,
-        height: 26,
+        width: 24,
+        height: 24,
         decoration: BoxDecoration(
           color: AppColors.primary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, size: 15, color: AppColors.primary),
+        child: Icon(icon, size: 14, color: AppColors.primary),
       ),
     );
   }

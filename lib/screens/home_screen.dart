@@ -7,26 +7,12 @@ import '../theme/app_colors.dart';
 import '../widgets/prayer_flower_widget.dart';
 import '../widgets/salat_tracker_card.dart';
 import '../widgets/quran_tracker_card.dart';
-import 'tasbih_screen.dart';
-import 'qibla_screen.dart';
-import 'zakat_calculator_screen.dart';
+import '../widgets/tasbih_home_card.dart';
 
-class _QuickAction {
-  final String label;
-  final IconData icon;
-  const _QuickAction(this.label, this.icon);
-}
-
-const _quickActions = [
-  _QuickAction('কুরআন', Icons.menu_book),
-  _QuickAction('হাদিস', Icons.article_outlined),
-  _QuickAction('তাসবিহ', Icons.fingerprint),
-  _QuickAction('কিবলা', Icons.explore_outlined),
-  _QuickAction('যাকাত', Icons.percent),
-  _QuickAction('রমজান', Icons.nightlight_round),
-  _QuickAction('হজ্জ', Icons.mosque_outlined),
-  _QuickAction('আরো', Icons.apps),
-];
+// 10.10: দ্রুত অ্যাক্সেস (তাসবিহ/কিবলা/যাকাত) সেকশন হোম থেকে সম্পূর্ণ সরানো হয়েছে —
+// এই তিনটাই আগে থেকে MoreScreen-এর গ্রিডে আছে (more_screen.dart), তাই হোমে রাখলে
+// ডুপ্লিকেট হতো। ইউজারের হাতে আঁকা রেফারেন্স ছবিতেও হোম স্ক্রিনে quick-access
+// গ্রিড নেই — সরাসরি ফুল → আয়াত/হাদিস স্লাইড → ট্র্যাকারগুলো দেখানো হয়েছে।
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -69,23 +55,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _onQuickAction(BuildContext context, String label) {
-    switch (label) {
-      case 'তাসবিহ':
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const TasbihScreen()));
-        break;
-      case 'কিবলা':
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const QiblaScreen()));
-        break;
-      case 'যাকাত':
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ZakatCalculatorScreen()));
-        break;
-      default:
-        // TODO: wire remaining quick actions once their screens are built.
-        break;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -104,72 +73,39 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text('আসসালামু আলাইকুম',
-                      style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
+                      style: TextStyle(color: Colors.white, fontSize: 21, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 14),
                   const _NextPrayerCard(),
                 ],
               ),
             ),
           ),
+          // 10.10: ইউজারের হাতে আঁকা রেফারেন্স অনুযায়ী ক্রম — বিসমিল্লাহ ফ্রেম +
+          // পাপড়ি (ফুল) সবার আগে, তারপর কুরআন/হাদিস স্লাইড, তারপর বাকি ট্র্যাকারগুলো।
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             sliver: SliverToBoxAdapter(
               child: PrayerFlowerWidget(lat: _lat, lng: _lng),
             ),
           ),
           SliverPadding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
             sliver: SliverToBoxAdapter(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('দ্রুত অ্যাক্সেস', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 12),
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _quickActions.length,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                      childAspectRatio: 0.8,
-                    ),
-                    itemBuilder: (context, i) {
-                      final action = _quickActions[i];
-                      return InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: () => _onQuickAction(context, action.label),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            CircleAvatar(
-                              radius: 26,
-                              // 7.5: bg_icon_circle.xml
-                              backgroundColor: AppColors.iconCircleBackground,
-                              child: Icon(action.icon, color: AppColors.primary),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(action.label, style: const TextStyle(fontSize: 12), textAlign: TextAlign.center),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 24),
+                  const Text('আজকের আয়াত ও হাদিস', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w400)),
+                  const SizedBox(height: 10),
+                  const _DailyVerseHadithCard(),
+                  const SizedBox(height: 16),
                   // Phase-3: আজকের সালাত ট্র্যাকার (৫ ওয়াক্ত টিক/ক্রস, SharedPreferences persist)
                   const SalatTrackerCard(),
                   const SizedBox(height: 12),
                   // Phase-4 (ডেমো): কুরআন তিলাওয়াত সময় + আয়াত কাউন্ট ট্র্যাকার
                   const QuranTrackerCard(),
-                  const SizedBox(height: 24),
-                  const Text('আজকের আয়াত ও হাদিস', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 12),
-                  const _DailyVerseHadithCard(),
-                  const SizedBox(height: 24),
-                  const Text('দৈনিক লক্ষ্য', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 12),
-                  const _DailyGoalsCard(),
+                  // 10.9: তাসবিহর কম্প্যাক্ট প্রিভিউ (real persist ডেটা, TasbihScreen এ নেভিগেট করে)
+                  const TasbihHomeCard(),
                 ],
               ),
             ),
@@ -348,7 +284,7 @@ class _DailyVerseHadithCardState extends State<_DailyVerseHadithCard> {
                   Text(label,
                       style: const TextStyle(
                         fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w400,
                         color: AppColors.secondary,
                         letterSpacing: 0.3,
                       )),
@@ -362,10 +298,10 @@ class _DailyVerseHadithCardState extends State<_DailyVerseHadithCard> {
                 style: const TextStyle(fontFamily: 'Bahij', fontSize: 21, height: 2.0),
               ),
               const SizedBox(height: 12),
-              Text(item.bengali, style: const TextStyle(fontSize: 14.5, height: 1.6)),
+              Text(item.bengali, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w400, height: 1.6)),
               const SizedBox(height: 8),
               Text(item.reference,
-                  style: TextStyle(fontSize: 11.5, color: referenceColor, fontWeight: FontWeight.w600)),
+                  style: TextStyle(fontSize: 11.5, color: referenceColor, fontWeight: FontWeight.w500)),
             ],
           ),
         ),
@@ -396,13 +332,39 @@ class _DailyVerseHadithCardState extends State<_DailyVerseHadithCard> {
     return Column(
       children: [
         SizedBox(
-          // আগে ছিল hard-coded 280 (guess); এখন 260 + কার্ডের ভেতরে SingleChildScrollView
-          // দিয়ে overflow-সেফ করা হয়েছে (লম্বা আয়াত/হাদিস টেক্সটেও কার্ড ভাঙবে না)।
-          height: 260,
-          child: PageView(
+          // 10.6: আগে ছিল fixed 260 (7.5-এ 280 থেকে নামানো), আরও কমিয়ে 220 করা
+          // হয়েছে — ভেতরের SingleChildScrollView (ClampingScrollPhysics) আগে
+          // থেকেই overflow-সেফ, তাই ছোট height-এও লম্বা টেক্সট স্ক্রল করে দেখা যাবে,
+          // ভাঙবে না।
+          height: 220,
+          child: PageView.builder(
             controller: _pageController,
+            itemCount: pages.length,
             onPageChanged: (i) => setState(() => _page = i),
-            children: pages,
+            itemBuilder: (context, index) {
+              // 10.6: হালকা fade + slide অ্যানিমেশন — পেজ যত দূরে সরে, তত ফিকে ও
+              // পাশে সরে যায় (AnimatedBuilder দিয়ে _pageController-এর লাইভ
+              // scroll offset শোনা হয়, প্লেইন PageView-এর বদলে PageView.builder)।
+              return AnimatedBuilder(
+                animation: _pageController,
+                builder: (context, child) {
+                  double page = _page.toDouble();
+                  if (_pageController.hasClients && _pageController.position.haveDimensions) {
+                    page = _pageController.page ?? page;
+                  }
+                  final delta = (page - index).clamp(-1.0, 1.0);
+                  final opacity = (1 - delta.abs()).clamp(0.0, 1.0);
+                  return Opacity(
+                    opacity: opacity,
+                    child: Transform.translate(
+                      offset: Offset(delta * 28, 0),
+                      child: child,
+                    ),
+                  );
+                },
+                child: pages[index],
+              );
+            },
           ),
         ),
         const SizedBox(height: 10),
@@ -427,47 +389,6 @@ class _DailyVerseHadithCardState extends State<_DailyVerseHadithCard> {
   }
 }
 
-/// 4.3: দৈনিক লক্ষ্য কার্ড — আপাতত static ইনপুট (কুরআন তিলাওয়াত, তাসবিহ, দোয়া)।
-/// ৫ ওয়াক্ত নামাজ আলাদা SalatTrackerCard এ (Phase-3, real persist) সরানো হয়েছে,
-/// এখানে ডুপ্লিকেট রাখা হয়নি। কুরআন/তাসবিহ/দোয়া পরে Phase-4/5-এ real হবে।
-class _DailyGoalsCard extends StatelessWidget {
-  const _DailyGoalsCard();
-
-  static const _goals = [
-    _Goal('কুরআন তিলাওয়াত', Icons.menu_book_outlined, 1, 1),
-    _Goal('তাসবি�� (১০০ বার)', Icons.fingerprint, 0, 1),
-    _Goal('সকাল-সন্ধ্যার দোয়া', Icons.volunteer_activism_outlined, 1, 2),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Column(
-          children: _goals
-              .map((g) => ListTile(
-                    leading: Icon(g.icon, color: AppColors.primary),
-                    title: Text(g.label),
-                    trailing: Text(
-                      '${g.done}/${g.target}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: g.done >= g.target ? AppColors.success : AppColors.secondary,
-                      ),
-                    ),
-                  ))
-              .toList(),
-        ),
-      ),
-    );
-  }
-}
-
-class _Goal {
-  final String label;
-  final IconData icon;
-  final int done;
-  final int target;
-  const _Goal(this.label, this.icon, this.done, this.target);
-}
+// 10.10: _DailyGoalsCard ("দৈনিক লক্ষ্য") সম্পূর্ণ সরানো হয়েছে — ইউজার বলেছেন
+// "বাকি সব লাগবে না"। কুরআন/সালাত/তাসবিহর real ট্র্যাকার কার্ড আগে থেকেই আলাদাভাবে
+// আছে (উপরে), তাই এই static/hardcoded সামারি কার্ডটা ডুপ্লিকেট ছিল।

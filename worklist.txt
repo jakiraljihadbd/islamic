@@ -1,4 +1,121 @@
 IslamicZone — Flutter Conversion Worklist
+সর্বশেষ আপডেট (২০ আগস্ট ২০২৬, সেশন ১০): Splash screen ফিক্স — ইউজার SPLASH_SCREEN_FIX.md
+আপলোড করেছিল (অন্য একটা AI টুল থেকে জেনারেট করা)। সেই ডকুমেন্টের বেশিরভাগ ধাপ এই
+প্রজেক্টে প্রযোজ্য না ছিল — কারণ ভুল package name (com.jrappspot.islamiczone, আসলটা
+com.islamiczone.org) এবং android/app/.../MainActivity.kt, colors.xml, styles.xml —
+এই ফাইলগুলো এডিট করতে বলা হয়েছিল, কিন্তু android/ ফোল্ডার ইচ্ছাকৃতভাবে এই রিপোতে নেই
+(প্রতি CI বিল্ডে flutter create দিয়ে অটো-জেনারেট হয়, দেখুন নিচের "গুরুত্বপূর্ণ নোট")।
+তাই ওই ধাপগুলো স্কিপ করা হয়েছে (এডিট করলেও পরের CI বিল্ডে হারিয়ে যেত)।
+আসল রুট-কজ ধরা হয়েছে lib/main.dart এ: FlutterNativeSplash.preserve() ছাড়াই
+runApp() এর আগে ভারী async init (AndroidAlarmManager.initialize, AlarmService.init,
+restoreAlarmsFromPrefs) চলছিল — native splash (LaunchTheme) প্রথম ফ্রেম আঁকা হওয়ার
+সাথে সাথেই নিজে থেকে সরে যায়, কিন্তু runApp() এর আগে সেই init শেষ না হওয়া পর্যন্ত
+কোনো ফ্রেমই আঁকা হতো না, ফলে মাঝে একটা সাদা/ফাঁকা ফ্রেমের গ্যাপ তৈরি হতো (native
+splash vs Flutter এর প্রথম ফ্রেমের মধ্যে overlap lag — এটাই ইউজারের রিপোর্ট করা
+সমস্যা)। ফিক্স: FlutterNativeSplash.preserve(widgetsBinding:) ensureInitialized()
+এর ঠিক পরে কল করা হয়েছে (native splash কে জোর করে ধরে রাখে), তারপর সব async init
+আগের মতোই চলে, runApp() এর পরপরই FlutterNativeSplash.remove() কল করা হয়েছে —
+এখন init চলাকালীন কোনো white-screen flash/overlap হবে না, একটাই মসৃণ স্প্ল্যাশ।
+flutter_native_splash প্যাকেজ pubspec.yaml এ dev_dependencies থেকে dependencies এ
+সরানো হয়েছে (preserve()/remove() রানটাইম API, শুধু build-time icon/splash জেনারেটর
+হিসেবে থাকলে dev_dependencies-এ import করলে build fail করত)। ⚠️ ডিভাইসে/CI build
+দিয়ে টেস্ট এখনো বাকি (এই সেশনে build/run environment ছিল না)।
+
+সর্বশেষ আপডেট (২০ আগস্ট ২০২৬, সেশন ৯): APK সাইজ অপটিমাইজেশন (আংশিক) — ইউজার
+APK_SIZE_OPTIMIZATION.md আপলোড করে বলেছিল "PDF বাদ দাও, এটার বদলে কুরআন পেজ খালি
+রাখো, বাকি কাজ করো"। এই সেশনে যা হয়েছে:
+  ✅ PDF সম্পূর্ণ সরানো (৪.২MB সাশ্রয়) — assets/quran.pdf ডিলিট, pubspec.yaml থেকে
+     syncfusion_flutter_pdfviewer dependency ও assets/quran.pdf এন্ট্রি সরানো।
+     lib/screens/quran_pdf_screen.dart ডিলিট করে নতুন lib/screens/quran_reader_screen.dart
+     (ইচ্ছাকৃতভাবে খালি — "শীঘ্রই আসছে" প্লেসহোল্ডার) বানানো হয়েছে। quran_screen.dart
+     এখন সূরায় ট্যাপ করলে এই নতুন খালি স্ক্রিনে নিয়ে যায় (PDF viewer এর বদলে)।
+     lib/models/surah.dart থেকে pdfPage/pageEstimated ফিল্ড ও surah_pages.json লোড
+     লজিক সরানো হয়েছে (আর ব্যবহার হয় না)। quran_tracker_card.dart এর কমেন্টে
+     QuranPdfScreen রেফারেন্স আপডেট করা হয়েছে।
+  ✅ azan.mp3 অডিও কমপ্রেস (472KB → 236KB, ~50% সাশ্রয়) — ffmpeg দিয়ে 64kbps এ
+     রি-এনকোড করা হয়েছে, duration/quality যাচাই করে দেখা হয়েছে ঠিক আছে।
+  ⏭️ Images optimize (assets/images/*.png) — টেস্ট করে দেখা গেছে lossless
+     রি-কম্প্রেশনে সামান্যই সাশ্রয় হয় (এগুলো আগে থেকেই ভালোভাবে কম্প্রেসড PNG)।
+     lossy color-reduction (128 কালার) দিয়ে ৮৬% পর্যন্ত সাশ্রয় সম্ভব কিন্তু এই
+     ইমেজগুলোতে (ফুল/মেনু/নেভ আইকন) ২০,০০০+ ইউনিক কালার আছে (গ্রেডিয়েন্ট/শেডিং) —
+     agressive কালার-রিডাকশনে visible banding/quality loss হওয়ার ঝুঁকি আছে যা এই
+     সেশনে চোখে দেখে যাচাই করার উপায় ছিল না, তাই ইচ্ছাকৃতভাবে skip করা হয়েছে।
+     ইউজার চাইলে নতুন sub-task হিসেবে করা যাবে (with ইউজার প্রিভিউ করে quality
+     approve করার পর)।
+  ❌ Split APK by ABI + R8 Minification — ব্লকড। এই দুটোর জন্য android/app/build.gradle(.kts)
+     এডিট করা লাগে, কিন্তু এই zip-এ android/ ফোল্ডারে শুধু AndroidManifest.xml আছে
+     (build.gradle CI-এর `flutter create` স্টেপে জেনারেট হয়, রিপোতে কমিট করা নেই —
+     উপরে "গুরুত্বপূর্ণ নোট" দেখুন)। যেটা এই এডিট গুলো প্যাচ করে সেই
+     .github/workflows/build.yml ফাইলটাও এই zip-এ নেই (আগের সেশনগুলোতে এটা ছিল বলে
+     worklist.txt-এ উল্লেখ আছে, কিন্তু এই আপলোডে অনুপস্থিত)। এই ফাইল না দেখে অন্ধভাবে
+     নতুন workflow লিখলে আগের CI স্টেপগুলো (android scaffold, applicationId, permission
+     auto-add, icon/splash generation) ভেঙে যাওয়ার ঝুঁকি আছে — তাই ইচ্ছাকৃতভাবে ছোঁয়া
+     হয়নি। পরের সেশনে .github/workflows/build.yml সহ zip আপলোড করলে এই দুটো করা যাবে।
+
+সর্বশেষ আপডেট (২০ আগস্ট ২০২৬, সেশন ৮): 10.10 সম্পন্ন — অর্ডার রিঅ্যারেঞ্জ + দ্রুত
+অ্যাক্সেস সরানো + গ্লোবাল হালকা পাস — ইউজার হাতে আঁকা রেফারেন্স ছবি (বিসমিল্লাহ ফ্রেম
+→ পাপড়ির ফুল → কুরআন/হাদিস স্লাইড → বাকি ট্র্যাকার) দিয়েছিল। lib/screens/home_screen.dart-এ:
+(১) "দ্রুত অ্যাক্সেস" সেকশন (তাসবিহ/কিবলা/যাকাত রো, _QuickAction ক্লাস, _onQuickAction
+মেথড) সম্পূর্ণ সরানো হয়েছে — এই তিনটাই আগে থেকে more_screen.dart-এর গ্রিডে আছে
+(10.5-এ যোগ হয়েছিল), হোমে রাখা ডুপ্লিকেট ছিল। (২) _DailyGoalsCard ("দৈনিক লক্ষ্য")
+ক্লাস + _Goal হেল্পার ক্লাস সম্পূর্ণ মুছে ফেলা হয়েছে (static/hardcoded ডেটা, real
+ট্র্যাকারগুলোর সাথে ডুপ্লিকেট)। (৩) কন্টেন্ট অর্ডার এখন: হেডার (সালাম+পরবর্তী নামাজ) →
+PrayerFlowerWidget (বিসমিল্লাহ ফ্রেম+৬ পাপড়ি) → _DailyVerseHadithCard (আয়াত/হাদিস
+স্লাইড) → SalatTrackerCard → QuranTrackerCard → TasbihHomeCard — রেফারেন্স ছবির
+ক্রম অনুযায়ী। (৪) গ্লোবাল হালকা পাস: গ্রিটিং টেক্সট bold→w600 (fontSize 22→21),
+"আজকের আয়াত ও হাদিস" হেডার w600→w400 (fontSize 18→15), salat_tracker_card.dart-এর
+"আজকের সালাত" টাইটেল w600→w400 ও ব্যাজ bold→w600, prayer_flower_widget.dart-এ
+বিসমিল্লাহ ফ্রেম ও ফুলের মাঝের গ্যাপ 20→14, home_screen.dart-এর সেকশন গ্যাপ
+20-24→10-16 কমানো হয়েছে। quran_tracker_card.dart আগে থেকেই (10.8) হালকা ছিল,
+এই সেশনে ছোঁয়া হয়নি। গ্রুপ ১০ সম্পূর্ণ শেষ (10.1–10.10, 10.5b সবগুলো)।
+
+সর্বশেষ আপডেট (২০ আগস্ট ২০২৬, সেশন ৭): 10.9 সম্পন্ন — হোমে তাসবিহ কম্প্যাক্ট প্রিভিউ —
+নতুন lib/widgets/tasbih_home_card.dart বানানো হয়েছে: গোল আইকন + "তাসবিহ ট্র্যাকার"
+লেবেল + ডানে এক লাইনের pill (বর্তমান জিকিরের বাংলা নাম + "count/target", যেমন
+"সুবহানাল্লাহ ৭/৩৩") + chevron। ডেটা TasbihScreen এ আগে থেকেই থাকা persist keys
+(tasbih_count, tasbih_target_count, tasbih_dhikr_index — SharedPreferences)
+থেকেই read-only ভাবে লোড করা হয়, নতুন persist লজিক লেখা হয়নি। tasbih_screen.dart
+এর _dhikrPhrases প্রাইভেট বলে import করা যায়নি, তাই একই ক্রমে বাংলা লেবেলের
+আলাদা কপি (_dhikrLabels) রাখা হয়েছে — ভবিষ্যতে TasbihScreen এ দ্বিক্‌র তালিকা
+বদলালে এই কপিটাও মেলাতে হবে। ট্যাপ করলে Navigator.push দিয়ে পুরো TasbihScreen এ
+যায়, ফিরে এলে প্রিভিউ কার্ড আবার রিফ্রেশ হয় (await push এর পর _load())। home_screen.dart
+এ import + placement যোগ হয়েছে QuranTrackerCard এর ঠিক নিচে।
+
+সর্বশেষ আপডেট (২০ আগস্ট ২০২৬, সেশন ৬): 10.7 ফিক্স + 10.8 সম্পন্ন —
+ইউজার রিপোর্ট করেছিল সালাত পিলগুলো "প্রত্যেকটা একই সাইজ হওয়া উচিত" — আগের
+ভার্সনে প্রতিটা পিলের ভেতরে আলাদা FittedBox থাকায় লম্বা লেবেল ("মাগরিব") বেশি
+scale-down হতো, ছোট লেবেল ("আসর") কম — ফলে ৫টা পিল ভিন্ন সাইজে দেখাত। ফিক্স:
+lib/widgets/salat_tracker_card.dart এ Expanded+per-pill-FittedBox সরিয়ে
+LayoutBuilder + একটামাত্র বাইরের FittedBox(scaleDown, alignment centerLeft)
+দিয়ে পুরো Row (৫টা পিল, mainAxisSize.min) একসাথে মোড়ানো হয়েছে — এখন সব পিল
+একই স্কেল-ফ্যাক্টরে বড়/ছোট হয়, তাই ফন্ট/ব্যাজ সাইজ সব সময় সমান। এর সাথে 10.8-ও
+এই সেশনে সম্পন্ন — বিস্তারিত নিচে গ্রুপ ১০ এ।
+
+সর্বশেষ আপডেট (২০ আগস্ট ২০২৬, সেশন ৫): 10.7 সম্পন্ন — আজকের সালাত পিল এক লাইনে —
+lib/widgets/salat_tracker_card.dart এ পিলগুলো আগে Wrap দিয়ে বসানো ছিল (ছোট
+স্ক্রিনে দুই লাইনে ভেঙে যেত)। এখন Row + Expanded দিয়ে ৫টা পিল জোর করে এক
+লাইনে সমান প্রস্থে বসানো হয়েছে। পিলের ভেতরে: লেবেল fontWeight w600→w400,
+fontSize 13→12; স্ট্যাটাস ব্যাজ সার্কেল 20→17px, আইকন সাইজ 13→11, padding
+কমানো (12,6,6,6 → 8,6,5,6), corner radius 24→22। প্রতিটা পিলে
+FittedBox(fit: BoxFit.scaleDown) যোগ করা হয়েছে যাতে সরু স্ক্রিনেও ("মাগরিব"এর
+মতো লম্বা লেবেলে) overflow না হয়ে সামান্য অটো-স্কেল-ডাউন হয়ে ফিট করে।
+persist/cycle লজিক ও কার্ড হেডার ("আজকের সালাত" + কাউন্টার ব্যাজ) অপরিবর্তিত।
+
+সর্বশেষ আপডেট (২০ আগস্ট ২০২৬, সেশন ৪): 🐛 বাগ-ফিক্স + 10.3 সম্পন্ন —
+ইউজার রিপোর্ট করেছিল "আগের ৭ ফ্রেম ঠিক মত দেখায় নাই" (গ্রুপ ৭.৫/10.2-এর img_bismi_frame.png)।
+মূল কারণ: img_bismi_frame.png আসলে ১১৬৭x৩৫০ পিক্সেলের চওড়া আয়তক্ষেত্রাকার ডেকোরেটিভ
+বর্ডার/ব্যানার ইমেজ (মূল Java XML এও fragment_home.xml-এ পুরো হেডার-চওড়া fitXY স্ট্রেচ
+হিসেবে ব্যবহৃত হতো), কিন্তু prayer_flower_widget.dart-এ এটা ভুলভাবে ফুল-স্ট্যাকের মাঝখানে
+১৬০x১৬০ বর্গক্ষেত্রে বসানো ছিল — ফলে চেপে/বিকৃত হয়ে দেখাত। ফিক্স: এই ইমেজ এখন সরিয়ে
+বিসমিল্লাহ হেডার ব্যানারের background হিসেবে (BoxFit.fill, ৯২dp height, headerGradient
+এর উপরে) বসানো হয়েছে — মূল Java লেআউটের ডিজাইন অনুযায়ী। টেক্সট রঙও গোল্ড (#FFD700/#FFE97A,
+শ্যাডো সহ) করা হয়েছে যাতে সবুজ গ্রেডিয়েন্ট ব্যাকগ্রাউন্ডে পড়া যায় (আগের প্লেইন গ্রিন
+কার্ড-স্টাইল বাদ)। এর সাথে 10.3-ও একই সেশনে সম্পন্ন — বিস্তারিত নিচে গ্রুপ ১০ এ।
+
+⚠️ নোট: .github/workflows/main.yml (CI বিল্ড ওয়ার্কফ্লো) এই সেশনে স্পর্শ করা হয়নি —
+worklist.txt আপডেট এর বাইরে অন্য কোনো ফাইলে (বিশেষত main.yml) পরিবর্তন করলে সবসময়
+আলাদাভাবে জানানো হবে, চুপচাপ বদলানো হবে না।
+
 ==========================================
 সর্বশেষ আপডেট (২০ আগস্ট ২০২৬): Phase 9.1 / worksalat.txt এর A1 sub-task সম্পন্ন —
 alarm_callback.dart-এ android_alarm_manager_plus ইম্পোর্ট করা ছিল কিন্তু pubspec.yaml-এ
@@ -418,6 +535,186 @@ values, menu, mipmap + সব java সোর্স) — এই গ্রুপ�
 
 পরবর্তী ধাপ: worksalat.txt দেখুন (Priority: ডিভাইসে আসল build দিয়ে টেস্ট — কোনো
 build/run environment এখনো কোনো সেশনেই ছিল না)
+
+--- গ্রুপ ১০: হোম স্ক্রিন — ক্লিন/হালকা (light-weight) নতুন ডিজাইন ---
+নতুন কাজ চালু: ২০ আগস্ট ২০২৬। ইউজার হাতে আঁকা ডেমো ছবি দিয়েছে (বিসমিল্লাহ ফ্রেম উপরে,
+তার নিচে ৬টা পাপড়ির ফুল — সূর্যোদয়/ফজর/যোহর/আসর/মাগরিব/এশা, প্রতিটায় নাম+সময়)।
+লক্ষ্য: পুরো হোম স্ক্রিন ক্লিন, ফাঁকা জায়গা বেশি, ফন্ট/এলিমেন্ট হালকা (bold/w600/w700 এর
+বদলে w300/w400 জাতীয় হালকা weight), উচ্চতা (height) কমানো — প্রতিটা সাব-টাস্ক আলাদা সেশনে।
+
+⚠️ রুট-কজ বাগ পাওয়া গেছে (10.1 এ ফিক্স করতে হবে): pubspec.yaml এর assets: এ শুধু
+"assets/images/" (parent folder) লেখা আছে। Flutter-এ folder entry শুধু ওই ফোল্ডারের
+সরাসরি ভেতরের ফাইল include করে, sub-folder (flower/, menu/, nav/, qibla/) না — তাই
+"assets/images/flower/img_...png" ও "assets/images/menu/img_...png" এর মতো
+সাব-ফোল্ডারের সব ইমেজ/আইকন আসলে bundle-ই হয় না, রানটাইমে "শো করে না" এই একই কারণে।
+এটাই ইউজারের "কোন ইমেজ বা আইকন শো করে না" কমপ্লেইনের মূল কারণ সম্ভবত।
+
+10.1  ✅ সম্পূর্ণ শেষ — pubspec.yaml এসেট পাথ ফিক্স
+      - assets: লিস্টে "assets/images/" এর সাথে এখন প্রতিটা সাব-ফোল্ডার আলাদাভাবে যোগ
+        করা হয়েছে: assets/images/flower/, assets/images/menu/, assets/images/nav/,
+        assets/images/qibla/ — এতদিন এই সাব-ফোল্ডারের PNG গুলো আসলে build-এ bundle-ই
+        হতো না, তাই ফুল/পাপড়ি/মেনু/ন্যাভ আইকন রানটাইমে ফাঁকা বা errorBuilder ফলব্যাক
+        দেখাত
+      - ⚠️ পরের সেশন/build এর আগে `flutter clean && flutter pub get` চালিয়ে নিশ্চিত করতে
+        হবে নতুন asset লিস্ট ঠিকভাবে পড়েছে (Termux/CI দুই জায়গাতেই)
+      - নতুন কোনো images/ সাব-ফোল্ডার (যেমন assets/images/xyz/) ভবিষ্যতে যোগ হলে
+        pubspec.yaml এ ম্যানুয়ালি লাইন যোগ করতে ভুলা যাবে না — এই বাগ আবার হতে পারে
+
+10.2  ✅ সম্পূর্ণ শেষ (সেশন ৩) — বিসমিল্লাহ ফ্রেম + লোকেশন রিডিজাইন
+      - lib/widgets/prayer_flower_widget.dart: ফ্রেম padding vertical 14→8, horizontal
+        20→18 (চিকন), Arabic টেক্সট fontSize 18→17 + fontWeight w600→w400, Bengali টেক্সট
+        fontSize 11→10.5 + fontWeight w500→w400, height/letterSpacing অপরিবর্তিত
+      - ফ্রেমের ভেতরে উপরে নতুন Row: Icons.location_on_outlined (size 12, secondary@0.8) +
+        লোকেশন নাম টেক্সট (fontSize 10, w400) — শুধু _locationName null না হলে দেখায়
+      - pubspec.yaml এ geocoding: ^3.0.0 dependency যোগ। widget নিজেই lat/lng থেকে
+        placemarkFromCoordinates() কল করে (initState + didUpdateWidget এ _loadLocationName()),
+        locality → না পেলে subAdministrativeArea → না পেলে administrativeArea ফলব্যাক
+        ক্রমে নাম বের করে setState করে। geocoding ব্যর্থ হলে (নেটওয়ার্ক/পারমিশন না থাকলে)
+        try/catch এ চুপচাপ সরে যায়, row-টা শুধু হাইড থাকে — কোনো error UI দেখায় না
+      - android/app/src/main/AndroidManifest.xml এ INTERNET permission যোগ করা হয়েছে
+        (CI-ও এমনিতে auto-add করত, কিন্তু কমিট করা manifest-এ সরাসরি থাকা ভালো — geocoding
+        ও Aladhan http কল দুটোরই এটা লাগে)
+      - HomeScreen এ কোনো পরিবর্তন লাগেনি (PrayerFlowerWidget(lat:, lng:) ইন্টারফেস অপরিবর্তিত)
+
+10.3  ✅ সম্পূর্ণ শেষ (সেশন ৪) — ৬-পাপড়ির ফুল লে-আউট রিডিজাইন
+      - _defs লিস্টে সূর্যোদয় ফিরিয়ে আনা হয়েছে (ফজর, সূর্যোদয়, যোহর, আসর, মাগরিব, এশা —
+        PrayerTimeService.ordered() এর ক্রমের সাথে হুবহু মিল)। ic_petal_sunrise.png,
+        img_flower_sunrise_green/blue.png — সবই আগে থেকেই assets/images/flower/ এ ছিল,
+        নতুন এসেট লাগেনি।
+      - পজিশনিং সম্পূর্ণ রিরাইট: আগে ৫টা পাপড়ির হার্ডকোড (left/top) অফসেট ছিল, এখন
+        _hexOffset(index) ফাংশন (dart:math sin/cos দিয়ে) প্রতিটা পাপড়িকে কেন্দ্র থেকে
+        সমান ব্যাসার্ধে (125px) ঠিক ৬০° পর পর বসায় — ফজর টপে (0°), তারপর ঘড়ির কাঁটার
+        দিকে সূর্যোদয়(৬০°)/যোহর(১২০°)/আসর(১৮০°, বটম)/মাগরিব(২৪০°)/এশা(৩০০°)। ফুল-স্ট্যাকের
+        SizedBox 280x280→320x320 করা হয়েছে যাতে ৬টা পাপড়ি প্রান্তে না গিয়ে ঠিকমতো বসে।
+      - প্রতিটা পাপড়ি: আইকন সার্কেল (60px) উপরে, তারপর নাম (হালকা w400) ও সময় (bold w700 —
+        শুধু সময়টাই bold, আগে শুধু active অবস্থায় সময় দেখাত, এখন সবসময় দেখায়)।
+      - ব্যাকগ্রাউন্ড কালার স্কিম বদলানো হয়েছে: active পাপড়ি এখনো সবুজ গ্রেডিয়েন্ট
+        (petalActiveGradient) + সাদা/primary টেক্সট, কিন্তু inactive পাপড়ি আগে ছিল
+        সাদা@alpha0.12 (স্বচ্ছ, dark ব্যাকগ্রাউন্ড ধরে বানানো) — এখন সলিড সাদা ব্যাকগ্রাউন্ড
+        + হালকা primary বর্ডার (alpha 0.15) + flat shadow (offset 0,2), কারণ HomeScreen এর
+        বাস্তব ব্যাকগ্রাউন্ড সাদা/হালকা, তাই আগের ডিজাইনে inactive পাপড়ির সাদা টেক্সট
+        দেখাই যেত না (invisible-on-white বাগ) — এটাও এই সাথে ফিক্স হয়ে গেছে।
+      - home_screen.dart এ কোনো পরিবর্তন লাগেনি (ইন্টারফেস অপরিবর্তিত)।
+
+10.4  ✅ সম্পূর্ণ শেষ (সেশন ৫) — পাপড়ি ট্যাপ করলে পপ-আপ (countdown + alarm toggle)
+      - lib/widgets/prayer_flower_widget.dart: আগে ট্যাপে ২.৫ সেকেন্ডের SnackBar দেখাত
+        (Timer দিয়ে রিভার্ট হতো) — এটা সরিয়ে showModalBottomSheet (rounded card,
+        backgroundColor: transparent, নিজস্ব container দিয়ে radius+shadow) বসানো
+        হয়েছে। ফুল এখন শিট বন্ধ হওয়া পর্যন্ত নীল থাকে (Timer এর বদলে
+        `await _showPetalSheet(index)` এর পর রিভার্ট হয় — শিট যেভাবেই বন্ধ হোক,
+        টগল চেপে হোক বা বাইরে ট্যাপ করে, রিভার্ট হবেই)
+      - নতুন _PetalDetailSheet (StatefulWidget, নিজস্ব ফাইলেই — ক্লাসের নিচে যোগ করা)
+        দেখায়: পাপড়ির আইকন (গ্রেডিয়েন্ট সার্কেলে), নাম, সময় (বড় bold), এবং
+        countdown লাইন — "বাকি আছে X ঘন্টা Y মিনিট" (future হলে), অতীতের ওয়াক্ত হলে
+        "এই ওয়াক্ত শেষ হয়েছে" (দুটো অপশনের মধ্যে প্রথমটা বেছে নেওয়া হয়েছে, সরল ও
+        স্পষ্ট)। শিট খোলা অবস্থায় প্রতি ১ মিনিটে নিজস্ব Timer.periodic দিয়ে countdown
+        রিফ্রেশ হয় (সেকেন্ড রেজোলিউশন না — ব্যাটারি বাঁচাতে)
+      - Switch টগল — prayer_screen.dart এর _onToggleChanged এর same key ফরম্যাট
+        ('alarm_enabled_$index', SharedPreferences) ও same AlarmService API
+        (requestIgnoreBatteryOptimizations + schedulePrayer(id:, dateTime:,
+        prayerName:, recurring:true) / cancelPrayer(id)) reuse করে — id = index+1,
+        নতুন কোনো scheduling লজিক লেখা হয়নি। State (_alarmEnabled লিস্ট, ৬টা পাপড়ির
+        জন্য) initState এ SharedPreferences থেকে লোড হয় (_loadAlarmStates)।
+      - ⚠️ পরিচিত pre-existing অসংগতি (এই সেশনে ছোঁয়া হয়নি, স্কোপের বাইরে):
+        prayer_screen.dart এর _prayerMeta লিস্টে সূর্যোদয় নেই (৫টা এন্ট্রি), কিন্তু
+        _toggles/_times.ordered ইনডেক্স ৬টা (সূর্যোদয়সহ) ধরে বানানো — ফলে ওই স্ক্রিনে
+        যোহর/আসর/মাগরিব/এশার alarm toggle UI আসলে ভুল ইনডেক্সের (এক ঘর শিফটেড) prefs
+        key/সময় দেখায়/সেভ করে। এই ফুল-উইজেটের নতুন পপ-আপ নিজে সঠিক (PrayerTimeService
+        এর আসল ordered ইনডেক্স ব্যবহার করে), কিন্তু prayer_screen.dart এ গেলে একই
+        prefs key গুলোর state ভিন্ন prayer নামে দেখাতে পারে — ভবিষ্যতে prayer_screen.dart
+        এর _prayerMeta তে সূর্যোদয় যোগ করে ইনডেক্স মিলিয়ে দিলে ফিক্স হবে (আলাদা sub-task)।
+
+10.5  ✅ সম্পূর্ণ শেষ — দ্রুত অ্যাক্সেস ছোট করে বাকিগুলো "আরো" (More) এ সরানো
+      - home_screen.dart এর _quickActions ৮টা থেকে ৩টায় নামানো হয়েছে: তাসবিহ, কিবলা, যাকাত
+        (এগুলোই সবচেয়ে বেশি ব্যবহৃত ও কার্যকরী)
+      - কুরআন সরানো হয়েছে (আগে থেকেই RootShell বটম-ন্যাভে আলাদা ট্যাব হিসেবে আছে, ডুপ্লিকেট
+        দরকার নেই); "আরো" শর্টকাটও সরানো হয়েছে একই কারণে (বটম-ন্যাভে আগে থেকেই আছে)
+      - GridView (crossAxisCount:4) এর বদলে হালকা Row (spaceEvenly) — মাত্র ৩টা আইটেম বলে
+        গ্রিড দরকার নেই, label ফন্ট w400 (হালকা) করা হয়েছে, "দ্রুত অ্যাক্সেস" হেডারও w500/16
+        এ নামানো হয়েছে (আগে w600/18)
+      - হাদিস, রমজান, হজ্জ — MoreScreen এ নতুন এন্ট্রি হিসেবে যোগ (img_hadith/img_ramadan/
+        img_hajj আইকন) — এদের এখনো নিজস্ব স্ক্রিন নেই (builder: null), তাই dim করে
+        "শীঘ্রই আসছে" সাবটাইটেল দেখানো হচ্ছে, ট্যাপে কিছু হয় না। এদের real স্ক্রিন বানানো
+        হলে ভবিষ্যতে নতুন sub-task হিসেবে যোগ করা যাবে (builder বসিয়ে দিলেই কাজ করবে)
+
+10.6  ✅ সম্পূর্ণ শেষ (সেশন ৬) — আজকের আয়াত ও হাদিস স্লাইড হালকা + সুন্দর অ্যানিমেশন
+      - lib/screens/home_screen.dart এর _DailyVerseHadithCard._slideCard(): label
+        ("আজকের আয়াত"/"আজকের হাদিস") fontWeight w600→w400, item.bengali এ এখন
+        সরাসরি fontWeight: w400 বসানো হয়েছে (আগে unset ছিল, ডিফল্টই w400 ছিল, তাও
+        স্পষ্ট করে দেওয়া হলো), item.reference fontWeight w600→w500 (পুরোপুরি হালকা
+        w400 করলে রেফারেন্স টেক্সট label/body থেকে আলাদা করা যেত না, তাই w500 এ
+        রাখা হয়েছে) — letterSpacing/height অপরিবর্তিত।
+      - PageView (প্লেইন, কোনো transition ছিল না) এর বদলে PageView.builder +
+        AnimatedBuilder(animation: _pageController) দিয়ে হালকা fade+slide অ্যানিমেশন
+        যোগ করা হয়েছে: বর্তমান পেজ থেকে যত দূরে (scroll delta), ততটাই ফিকে
+        (Opacity) ও পাশে সরানো (Transform.translate, ±28px) হয় প্রতিটা পেজ —
+        সোয়াইপ করার সময় লাইভ আপডেট হয় (_pageController.page থেকে)।
+      - কার্ডের SizedBox height 260→220 করা হয়েছে (ফাঁকা জায়গা কমাতে); ভেতরের
+        SingleChildScrollView (আগে থেকেই ছিল) এখনো overflow-সেফটি দেয়, তাই ছোট
+        height-এও লম্বা আয়াত/হাদিস স্ক্রল করে দেখা যাবে, ভাঙবে না — তাই "কমানো" পথ
+        বেছে নেওয়া হয়েছে (সত্যিকারের dynamic per-page height PageView-এ অতিরিক্ত
+        প্যাকেজ ছাড়া নির্ভরযোগ্যভাবে করা যায় না, স্কোপের বাইরে রাখা হলো)।
+      - সেকশন হেডার "আজকের আয়াত ও হাদিস" (home_screen.dart, এই কার্ডের বাইরে) এখনো
+        w600 — সেটা 10.10 এর গ্লোবাল হালকা পাসের অংশ, এই সাব-টাস্কে ছোঁয়া হয়নি।
+
+10.7  ✅ সম্পূর্ণ শেষ (সেশন ৫) — আজকের সালাত এক লাইনে, হালকা ওয়েট
+      - lib/widgets/salat_tracker_card.dart: Wrap সরিয়ে Row + Expanded (৫টা পিল
+        সমান প্রস্থে, জোর করে এক লাইনে, স্ক্রল ছাড়াই)। _SalatPill এর ভেতরে লেবেল
+        fontWeight w600→w400, fontSize 13→12; ব্যাজ সার্কেল 20→17px, আইকন 13→11,
+        padding/radius সামান্য কমানো। FittedBox(scaleDown) যোগ যাতে সরু স্ক্রিনে
+        "মাগরিব"-এর মতো লম্বা লেবেলেও overflow না হয়ে অটো-স্কেল-ডাউন হয়ে ফিট করে।
+        হেডার রো ("আজকের সালাত" + "X/৫ আদায়" ব্যাজ) ও persist/cycle লজিক অপরিবর্তিত।
+
+10.8  ✅ সম্পূর্ণ শেষ (সেশন ৬) — কুরআন ট্র্যাকার কার্ড হালকা ওয়েট
+      - lib/widgets/quran_tracker_card.dart: কার্ড outer padding 16,14,16,14→14,12,14,12;
+        "আজকের তিলাওয়াত" টাইটেল fontWeight w600→w400, fontSize 15→14; "ডেমো" ব্যাজ
+        bold→w600; হেডার আইকন সাইজ 18px স্পষ্ট করে বসানো, হেডারের পর গ্যাপ 14→10
+      - _StatTile: padding (12,10,8,10)→(10,8,8,8), leading আইকন 18→16, label
+        fontWeight যোগ w400 + fontSize 11→10, value fontWeight bold→w600 + fontSize
+        17→15 — সংখ্যাটা এখনো visually প্রধান কিন্তু আর ভারী bold না
+      - স্টপওয়াচ প্লে/পজ বাটন 34x34→30x30 (আইকন 18→16), +/- মিনি বাটন 26x26→24x24
+        (আইকন 15→14) — কার্ড কম্প্যাক্ট হওয়ায় বাটনগুলো একই অনুপাতে ছোট করা হয়েছে
+      - persist/timer/ayah-counter লজিক অপরিবর্তিত
+
+10.9  ✅ সম্পূর্ণ শেষ (সেশন ৭) — তাসবিহ, হোমে নতুন কম্প্যাক্ট প্রিভিউ কার্ড
+      - নতুন ফাইল lib/widgets/tasbih_home_card.dart: গোল আইকন + "তাসবিহ ট্র্যাকার"
+        লেবেল + ডানে এক লাইনের pill (জিকিরের বাংলা নাম + count/target) + chevron
+      - TasbihScreen এর persist keys (tasbih_count/tasbih_target_count/
+        tasbih_dhikr_index) থেকেই read-only ডেটা লোড, নতুন persist নেই
+      - দ্বিক্‌র লেবেলের একটা আলাদা কপি (_dhikrLabels) রাখা হয়েছে কারণ
+        tasbih_screen.dart এর _dhikrPhrases প্রাইভেট — তালিকা বদলালে দুই জায়গায় মেলাতে হবে
+      - ট্যাপে Navigator.push দিয়ে TasbihScreen এ যায়, ফিরে এলে auto-refresh হয়
+      - home_screen.dart এ import + QuranTrackerCard এর নিচে placement যোগ হয়েছে
+
+10.10 ✅ সম্পূর্ণ শেষ (সেশন ৮) — বাদ দেওয়া + অর্ডার রিঅ্যারেঞ্জ + গ্লোবাল হালকা পাস
+      - _DailyGoalsCard ("দৈনিক লক্ষ্য") + _Goal হেল্পার ক্লাস সম্পূর্ণ home_screen.dart
+        থেকে সরানো হয়েছে (ইউজার বলেছে "বাকি সব লাগবে না")
+      - "দ্রুত অ্যাক্সেস" সেকশন (তাসবিহ/কিবলা/যাকাত রো) সম্পূর্ণ সরানো — ইউজারের হাতে
+        আঁকা রেফারেন্স ছবিতে হোমে quick-access নেই, আর এই তিনটাই আগে থেকে
+        more_screen.dart-এর গ্রিডে (10.5) আছে বলে ডুপ্লিকেট ছিল
+      - কন্টেন্ট অর্ডার রেফারেন্স ছবি অনুযায়ী রিঅ্যারেঞ্জ: হেডার (সালাম+পরবর্তী নামাজ) →
+        PrayerFlowerWidget (বিসমিল্লাহ+পাপড়ি) → _DailyVerseHadithCard (আয়াত/হাদিস
+        স্লাইড) → SalatTrackerCard → QuranTrackerCard → TasbihHomeCard
+      - পুরো home_screen.dart + prayer_flower_widget.dart + salat_tracker_card.dart
+        জুড়ে section header টেক্সট (গ্রিটিং, "আজকের আয়াত ও হাদিস", "আজকের সালাত")
+        হালকা ওয়েটে নামানো হয়েছে, vertical SizedBox গ্যাপ কমিয়ে সামগ্রিক স্ক্রল
+        দৈর্ঘ্য কমানো হয়েছে (বিস্তারিত উপরে "সর্বশেষ আপডেট"-এ)
+      - quran_tracker_card.dart আগে থেকেই (10.8) হালকা ছিল, এই সেশনে ছোঁয়া হয়নি
+
+10.5b ✅ সম্পূর্ণ শেষ — MoreScreen গ্রিড-সিস্টেম ভিউতে রিডিজাইন
+      - ListView.separated (একটার নিচে একটা লিস্ট) সরিয়ে GridView.builder বসানো হয়েছে,
+        crossAxisCount:3 — প্রতি লাইনে ৩টা করে বড় কার্ড
+        (childAspectRatio:0.85, mainAxis/crossAxisSpacing:14)
+      - প্রতিটা এন্ট্রি এখন একটা বড় rounded card (Material+InkWell, radius 18): মাঝখানে
+        বড় ৬৪x৬৪ গোল আইকন (iconCircleBackground সার্কেলের ভেতরে), নিচে লেবেল (২ লাইন পর্যন্ত)
+      - কার্যকরী আইটেমে হালকা elevation (1.5) + সবুজ shadowColor, "শীঘ্রই আসছে" আইটেমে
+        elevation 0 + dim/faded card (আগের মতোই dim আইকন + ধূসর লেবেল + সাবটেক্সট বজায় আছে)
+      - ট্যাপ এলাকা এখন পুরো কার্ড জুড়ে (আগে ছিল পুরো ListTile row জুড়ে) — আচরণ অপরিবর্তিত
+
+নিয়ম অপরিবর্তিত: প্রতি সেশনে ঠিক ১টা sub-task (যেমন শুধু 10.1)। 10.1 আগে করা ভালো
+(এটা একটা আসল bug fix, বাকিগুলো ভিজ্যুয়াল/UX)। ডেমো ছবি রেফারেন্স হিসেবে
+IMG_20260820_083202_496.jpg (হাতে আঁকা স্কেচ) — পরের সেশনে আবার দরকার হলে এই একই
+ছবি আবার আপলোড করে দিতে হবে (এই zip এ ছবিটা সংরক্ষিত নেই)।
 
 === গুরুত্বপূর্ণ নোট (পরের Claude সেশনের জন্য) ===
 - Package name অবশ্যই com.islamiczone.org রাখতে হবে (Play Store existing app)

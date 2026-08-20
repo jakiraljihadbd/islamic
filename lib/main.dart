@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 import 'app.dart';
 import 'services/crash_logger.dart';
@@ -13,7 +14,16 @@ import 'services/alarm_service.dart';
 
 void main() {
   CrashLogger.runGuarded(() async {
-    WidgetsFlutterBinding.ensureInitialized();
+    final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+
+    // splash screen ফিক্স: আগে native splash (LaunchTheme) শেষ হয়ে যাওয়ার পর,
+    // নিচের async init (alarm manager/notification/prefs) শেষ না হওয়া পর্যন্ত
+    // একটা ফাঁকা/সাদা ফ্রেম দেখাত (native splash সরে গেছে কিন্তু runApp() এখনো
+    // কল হয়নি) — এটাই আসল "২-৩ সেকেন্ড splash" সমস্যার কারণ, যা
+    // FlutterNativeSplash.preserve() না থাকায় হতো। preserve() native splash কে
+    // আটকে রাখে যতক্ষণ না নিচে remove() কল হয়, তাই init চলাকালীন কোনো white-screen
+    // flash/overlap হবে না — একটাই মসৃণ স্প্ল্যাশ, দুইটা আলাদা স্প্ল্যাশের ওভারল্যাপ না।
+    FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
     // Portrait lock
     await SystemChrome.setPreferredOrientations([
@@ -66,5 +76,8 @@ void main() {
     final launchPayload = await AlarmService.instance.getLaunchPayload();
 
     runApp(IslamicZoneApp(initialAlarmPayload: launchPayload));
+
+    // init শেষ, এখন প্রথম ফ্রেম আঁকা হওয়ার পর native splash সরিয়ে দাও।
+    FlutterNativeSplash.remove();
   });
 }
