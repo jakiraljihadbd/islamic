@@ -48,13 +48,44 @@ jobs:
           sed -i 's/minSdkVersion flutter\.minSdkVersion/minSdkVersion 26/' "$BUILD_GRADLE"
           grep -n "minSdk" "$BUILD_GRADLE"
 
-      - name: Set compileSdk to 35 (plugin compatibility)
+      - name: Set compileSdk to 36 (plugin compatibility)
         run: |
           BUILD_GRADLE="android/app/build.gradle.kts"
           if [ ! -f "$BUILD_GRADLE" ]; then BUILD_GRADLE="android/app/build.gradle"; fi
           sed -i 's/compileSdk = flutter\.compileSdkVersion/compileSdk = 36/' "$BUILD_GRADLE"
           sed -i 's/compileSdkVersion flutter\.compileSdkVersion/compileSdkVersion 36/' "$BUILD_GRADLE"
           grep -n "compileSdk" "$BUILD_GRADLE"
+
+      - name: Force compileSdk 36 across all plugin subprojects
+        run: |
+          ROOT_GRADLE="android/build.gradle.kts"
+          if [ ! -f "$ROOT_GRADLE" ]; then ROOT_GRADLE="android/build.gradle"; fi
+          if [[ "$ROOT_GRADLE" == *.kts ]]; then
+            cat >> "$ROOT_GRADLE" <<'GEOF'
+
+subprojects {
+    afterEvaluate {
+        extensions.findByType(com.android.build.gradle.BaseExtension::class.java)?.let {
+            it.compileSdkVersion(36)
+        }
+    }
+}
+GEOF
+          else
+            cat >> "$ROOT_GRADLE" <<'GEOF'
+
+subprojects {
+    afterEvaluate {
+        if (project.hasProperty("android")) {
+            android {
+                compileSdkVersion 36
+            }
+        }
+    }
+}
+GEOF
+          fi
+          cat "$ROOT_GRADLE"
 
       - name: Enable core library desugaring (flutter_local_notifications)
         run: |
