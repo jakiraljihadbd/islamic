@@ -30,10 +30,10 @@ jobs:
       - name: Ensure android/ platform folder exists
         run: |
           if [ ! -f "android/app/build.gradle.kts" ] && [ ! -f "android/app/build.gradle" ]; then
-            flutter create --platforms=android --org com.islamiczone --project-name islamic_zone .
+            flutter create --platforms=android --org com.islamiczone --project-name org .
           fi
 
-      - name: Set application id to match original app
+      - name: Set application id to match original app (safety no-op now)
         run: |
           BUILD_GRADLE="android/app/build.gradle.kts"
           if [ ! -f "$BUILD_GRADLE" ]; then BUILD_GRADLE="android/app/build.gradle"; fi
