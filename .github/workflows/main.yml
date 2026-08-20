@@ -93,6 +93,8 @@ jobs:
           PUB_CACHE_DIR="${PUB_CACHE:-$HOME/.pub-cache}"
           COUNT=0
           while IFS= read -r -d '' f; do
+            sed -i -E 's/compileSdkVersion[[:space:]]+flutter\.compileSdkVersion/compileSdkVersion 36/' "$f"
+            sed -i -E 's/compileSdk[[:space:]]*=[[:space:]]*flutter\.compileSdkVersion/compileSdk = 36/' "$f"
             sed -i -E 's/compileSdkVersion[[:space:]]+[0-9]+/compileSdkVersion 36/' "$f"
             sed -i -E 's/compileSdk[[:space:]]*=[[:space:]]*[0-9]+/compileSdk = 36/' "$f"
             COUNT=$((COUNT+1))
