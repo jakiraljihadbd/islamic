@@ -52,8 +52,8 @@ jobs:
         run: |
           BUILD_GRADLE="android/app/build.gradle.kts"
           if [ ! -f "$BUILD_GRADLE" ]; then BUILD_GRADLE="android/app/build.gradle"; fi
-          sed -i 's/compileSdk = flutter\.compileSdkVersion/compileSdk = 35/' "$BUILD_GRADLE"
-          sed -i 's/compileSdkVersion flutter\.compileSdkVersion/compileSdkVersion 35/' "$BUILD_GRADLE"
+          sed -i 's/compileSdk = flutter\.compileSdkVersion/compileSdk = 36/' "$BUILD_GRADLE"
+          sed -i 's/compileSdkVersion flutter\.compileSdkVersion/compileSdkVersion 36/' "$BUILD_GRADLE"
           grep -n "compileSdk" "$BUILD_GRADLE"
 
       - name: Enable core library desugaring (flutter_local_notifications)
