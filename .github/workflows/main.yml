@@ -26,7 +26,7 @@ jobs:
 
       - name: Ensure android/ platform folder exists
         run: |
-          if [ ! -d "android" ]; then
+          if [ ! -f "android/app/build.gradle.kts" ] && [ ! -f "android/app/build.gradle" ]; then
             flutter create --platforms=android --org com.islamiczone --project-name islamic_zone .
           fi
 
