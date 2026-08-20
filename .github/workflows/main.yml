@@ -56,31 +56,6 @@ jobs:
           sed -i 's/compileSdkVersion flutter\.compileSdkVersion/compileSdkVersion 36/' "$BUILD_GRADLE"
           grep -n "compileSdk" "$BUILD_GRADLE"
 
-      - name: Force compileSdk 36 across all plugin subprojects
-        run: |
-          ROOT_GRADLE="android/build.gradle.kts"
-          if [ ! -f "$ROOT_GRADLE" ]; then ROOT_GRADLE="android/build.gradle"; fi
-          if [[ "$ROOT_GRADLE" == *.kts ]]; then
-            echo '' >> "$ROOT_GRADLE"
-            echo 'subprojects {' >> "$ROOT_GRADLE"
-            echo '    plugins.withId("com.android.library") {' >> "$ROOT_GRADLE"
-            echo '        extensions.configure<com.android.build.gradle.LibraryExtension> {' >> "$ROOT_GRADLE"
-            echo '            compileSdk = 36' >> "$ROOT_GRADLE"
-            echo '        }' >> "$ROOT_GRADLE"
-            echo '    }' >> "$ROOT_GRADLE"
-            echo '}' >> "$ROOT_GRADLE"
-          else
-            echo '' >> "$ROOT_GRADLE"
-            echo 'subprojects {' >> "$ROOT_GRADLE"
-            echo '    plugins.withId("com.android.library") {' >> "$ROOT_GRADLE"
-            echo '        android {' >> "$ROOT_GRADLE"
-            echo '            compileSdk 36' >> "$ROOT_GRADLE"
-            echo '        }' >> "$ROOT_GRADLE"
-            echo '    }' >> "$ROOT_GRADLE"
-            echo '}' >> "$ROOT_GRADLE"
-          fi
-          cat "$ROOT_GRADLE"
-
       - name: Enable core library desugaring (flutter_local_notifications)
         run: |
           BUILD_GRADLE="android/app/build.gradle.kts"
@@ -112,6 +87,17 @@ jobs:
 
       - name: Get dependencies
         run: flutter pub get
+
+      - name: Bump compileSdk inside installed plugin packages
+        run: |
+          PUB_CACHE_DIR="${PUB_CACHE:-$HOME/.pub-cache}"
+          COUNT=0
+          while IFS= read -r -d '' f; do
+            sed -i -E 's/compileSdkVersion[[:space:]]+[0-9]+/compileSdkVersion 36/' "$f"
+            sed -i -E 's/compileSdk[[:space:]]*=[[:space:]]*[0-9]+/compileSdk = 36/' "$f"
+            COUNT=$((COUNT+1))
+          done < <(find "$PUB_CACHE_DIR/hosted" -path "*/android/build.gradle*" -print0 2>/dev/null)
+          echo "Patched $COUNT plugin build.gradle file(s) to compileSdk 36"
 
       - name: Generate app launcher icon
         run: dart run flutter_launcher_icons
