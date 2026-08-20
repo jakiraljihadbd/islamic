@@ -61,29 +61,25 @@ jobs:
           ROOT_GRADLE="android/build.gradle.kts"
           if [ ! -f "$ROOT_GRADLE" ]; then ROOT_GRADLE="android/build.gradle"; fi
           if [[ "$ROOT_GRADLE" == *.kts ]]; then
-            cat >> "$ROOT_GRADLE" <<'GEOF'
-
-subprojects {
-    afterEvaluate {
-        extensions.findByType(com.android.build.gradle.BaseExtension::class.java)?.let {
-            it.compileSdkVersion(36)
-        }
-    }
-}
-GEOF
+            echo '' >> "$ROOT_GRADLE"
+            echo 'subprojects {' >> "$ROOT_GRADLE"
+            echo '    afterEvaluate {' >> "$ROOT_GRADLE"
+            echo '        extensions.findByType(com.android.build.gradle.BaseExtension::class.java)?.let {' >> "$ROOT_GRADLE"
+            echo '            it.compileSdkVersion(36)' >> "$ROOT_GRADLE"
+            echo '        }' >> "$ROOT_GRADLE"
+            echo '    }' >> "$ROOT_GRADLE"
+            echo '}' >> "$ROOT_GRADLE"
           else
-            cat >> "$ROOT_GRADLE" <<'GEOF'
-
-subprojects {
-    afterEvaluate {
-        if (project.hasProperty("android")) {
-            android {
-                compileSdkVersion 36
-            }
-        }
-    }
-}
-GEOF
+            echo '' >> "$ROOT_GRADLE"
+            echo 'subprojects {' >> "$ROOT_GRADLE"
+            echo '    afterEvaluate {' >> "$ROOT_GRADLE"
+            echo '        if (project.hasProperty("android")) {' >> "$ROOT_GRADLE"
+            echo '            android {' >> "$ROOT_GRADLE"
+            echo '                compileSdkVersion 36' >> "$ROOT_GRADLE"
+            echo '            }' >> "$ROOT_GRADLE"
+            echo '        }' >> "$ROOT_GRADLE"
+            echo '    }' >> "$ROOT_GRADLE"
+            echo '}' >> "$ROOT_GRADLE"
           fi
           cat "$ROOT_GRADLE"
 
