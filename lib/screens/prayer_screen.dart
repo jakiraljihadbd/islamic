@@ -442,6 +442,7 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
               ],
             ),
           ),
+          ),
           
           const SizedBox(height: 10),
           
