@@ -1,8 +1,6 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import '../models/daily_content.dart';
-import '../services/prayer_time_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/prayer_flower_widget.dart';
 import '../widgets/salat_tracker_card.dart';
@@ -60,30 +58,17 @@ class _HomeScreenState extends State<HomeScreen> {
     return SafeArea(
       child: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
-              decoration: const BoxDecoration(
-                // 7.5: bg_header_gradient.xml
-                gradient: AppColors.headerGradient,
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('আসসালামু আলাইকুম',
-                      style: TextStyle(color: Colors.white, fontSize: 21, fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 14),
-                  const _NextPrayerCard(),
-                ],
-              ),
-            ),
-          ),
-          // 10.10: ইউজারের হাতে আঁকা রেফারেন্স অনুযায়ী ক্রম — বিসমিল্লাহ ফ্রেম +
-          // পাপড়ি (ফুল) সবার আগে, তারপর কুরআন/হাদিস স্লাইড, তারপর বাকি ট্র্যাকারগুলো।
+          // Worklist_home #1: "আসসালামু আলাইকুম" গ্রিটিং হেডার + "পরবর্তী নামাজ"
+          // কার্ড (_NextPrayerCard, নিচে সম্পূর্ণ সরানো হয়েছে) — সম্পূর্ণ বাদ
+          // দেওয়া হয়েছে। এখন স্ক্রল একদম উপর থেকেই PrayerFlowerWidget দিয়ে শুরু
+          // হয় (যার নিজস্ব বিসমিল্লাহ ব্যানার আগে থেকেই আছে)।
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            // worklist_home #২: বিসমিল্লাহ ফ্রেমের উপরে-নিচের ফাঁকা জায়গা কমাতে
+            // vertical প্যাডিং 16 → 10 করা হয়েছে (আরও কম্প্যাক্ট)। horizontal
+            // 20 অপরিবর্তিত রাখা হয়েছে — এটাই সেই মান যা prayer_flower_widget.dart
+            // -এ বিসমিল্লাহ ফ্রেমের negative margin (-20) দিয়ে ভাঙা হয়, যাতে শুধু
+            // ফ্রেমটা full-width হয় আর পাপড়ি সেকশন আগের মতোই padded থাকে।
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             sliver: SliverToBoxAdapter(
               child: PrayerFlowerWidget(lat: _lat, lng: _lng),
             ),
@@ -94,10 +79,8 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('আজকের আয়াত ও হাদিস', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w400)),
-                  const SizedBox(height: 10),
                   const _DailyVerseHadithCard(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   // Phase-3: আজকের সালাত ট্র্যাকার (৫ ওয়াক্ত টিক/ক্রস, SharedPreferences persist)
                   const SalatTrackerCard(),
                   const SizedBox(height: 12),
@@ -109,120 +92,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NextPrayerCard extends StatefulWidget {
-  const _NextPrayerCard();
-
-  @override
-  State<_NextPrayerCard> createState() => _NextPrayerCardState();
-}
-
-class _NextPrayerCardState extends State<_NextPrayerCard> {
-  // Default: Dhaka (location resolve না হলে এই ফলব্যাক)।
-  double _lat = 23.8103;
-  double _lng = 90.4125;
-  MapEntry<String, DateTime>? _next;
-  Timer? _ticker;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-    _ticker = Timer.periodic(const Duration(seconds: 30), (_) => _refresh());
-  }
-
-  @override
-  void dispose() {
-    _ticker?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _load() async {
-    try {
-      final permission = await Geolocator.checkPermission();
-      var granted = permission == LocationPermission.always || permission == LocationPermission.whileInUse;
-      if (!granted) {
-        final requested = await Geolocator.requestPermission();
-        granted = requested == LocationPermission.always || requested == LocationPermission.whileInUse;
-      }
-      if (granted && await Geolocator.isLocationServiceEnabled()) {
-        final pos = await Geolocator.getCurrentPosition(
-          locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium),
-        );
-        _lat = pos.latitude;
-        _lng = pos.longitude;
-      }
-    } catch (_) {
-      // location না পেলে ডিফল্ট ঢাকা কোঅর্ডিনেট ব্যবহার হবে।
-    }
-    _refresh();
-  }
-
-  void _refresh() {
-    final next = PrayerTimeService.nextPrayer(latitude: _lat, longitude: _lng, now: DateTime.now());
-    if (!mounted) return;
-    setState(() => _next = next);
-  }
-
-  String _countdown(DateTime target) {
-    final diff = target.difference(DateTime.now());
-    if (diff.isNegative) return '০০:০০';
-    final h = diff.inHours.toString().padLeft(2, '0');
-    final m = (diff.inMinutes % 60).toString().padLeft(2, '0');
-    return '$h:$m';
-  }
-
-  String _fmt(DateTime t) {
-    final hour24 = t.hour;
-    final hour12 = hour24 % 12 == 0 ? 12 : hour24 % 12;
-    final minute = t.minute.toString().padLeft(2, '0');
-    final suffix = hour24 < 12 ? 'AM' : 'PM';
-    return '$hour12:$minute $suffix';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final next = _next;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('পরবর্তী নামাজ', style: TextStyle(color: Colors.white70, fontSize: 12)),
-              const SizedBox(height: 4),
-              Text(
-                next?.key ?? '...',
-                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                next != null ? _fmt(next.value) : '--:--',
-                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                next != null ? 'বাকি ${_countdown(next.value)}' : '',
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
-              ),
-            ],
           ),
         ],
       ),
@@ -270,7 +139,8 @@ class _DailyVerseHadithCardState extends State<_DailyVerseHadithCard> {
     return Card(
       margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
+        // worklist_home #৪: ভিতরের ফাঁকা জায়গা কমানো হয়েছে (18,16,18,14 → 16,12,16,10)
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
         child: SingleChildScrollView(
           physics: const ClampingScrollPhysics(),
           child: Column(
@@ -279,27 +149,33 @@ class _DailyVerseHadithCardState extends State<_DailyVerseHadithCard> {
             children: [
               Row(
                 children: [
-                  Icon(icon, size: 16, color: AppColors.secondary),
+                  Icon(icon, size: 15, color: AppColors.secondary),
                   const SizedBox(width: 6),
                   Text(label,
                       style: const TextStyle(
-                        fontSize: 12.5,
+                        fontSize: 12,
                         fontWeight: FontWeight.w400,
                         color: AppColors.secondary,
                         letterSpacing: 0.3,
                       )),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
+              // worklist_home #৪: আয়াত/হাদিসের লেখা চোখে পড়ার মতো বড় করা হয়েছে
+              // (21→24), আর weight হালকা/regular (w400) রাখা হয়েছে যাতে ভারী/বোল্ড
+              // না লাগে।
               Text(
                 item.arabic,
                 textAlign: TextAlign.right,
                 textDirection: TextDirection.rtl,
-                style: const TextStyle(fontFamily: 'Bahij', fontSize: 21, height: 2.0),
+                style: const TextStyle(fontFamily: 'Bahij', fontSize: 24, fontWeight: FontWeight.w400, height: 1.9),
               ),
-              const SizedBox(height: 12),
-              Text(item.bengali, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w400, height: 1.6)),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
+              Text(
+                item.bengali,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w400, height: 1.65, letterSpacing: 0.15),
+              ),
+              const SizedBox(height: 6),
               Text(item.reference,
                   style: TextStyle(fontSize: 11.5, color: referenceColor, fontWeight: FontWeight.w500)),
             ],
@@ -332,11 +208,10 @@ class _DailyVerseHadithCardState extends State<_DailyVerseHadithCard> {
     return Column(
       children: [
         SizedBox(
-          // 10.6: আগে ছিল fixed 260 (7.5-এ 280 থেকে নামানো), আরও কমিয়ে 220 করা
-          // হয়েছে — ভেতরের SingleChildScrollView (ClampingScrollPhysics) আগে
-          // থেকেই overflow-সেফ, তাই ছোট height-এও লম্বা টেক্সট স্ক্রল করে দেখা যাবে,
-          // ভাঙবে না।
-          height: 220,
+          // worklist_home #৪: ফন্ট সাইজ বড় করার পর কন্টেন্ট আগের চেয়ে বেশি জায়গা
+          // নেয়, তাই নিচের অতিরিক্ত ফাঁকা জায়গা কমাতে height 220 → 200 করা হয়েছে
+          // (ভিতরের SingleChildScrollView + ClampingScrollPhysics এখনো overflow-সেফ)।
+          height: 200,
           child: PageView.builder(
             controller: _pageController,
             itemCount: pages.length,
@@ -367,7 +242,7 @@ class _DailyVerseHadithCardState extends State<_DailyVerseHadithCard> {
             },
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(pages.length, (i) {

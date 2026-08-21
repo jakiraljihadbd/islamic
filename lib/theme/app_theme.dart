@@ -31,20 +31,23 @@ class AppTheme {
           ),
         ),
         navigationBarTheme: NavigationBarThemeData(
+          height: 80,
           backgroundColor: AppColors.surface,
-          indicatorColor: AppColors.primaryLight.withValues(alpha: 0.25),
+          indicatorColor: AppColors.primaryLight.withValues(alpha: 0.2),
           labelTextStyle: WidgetStateProperty.resolveWith((states) {
             final selected = states.contains(WidgetState.selected);
             return TextStyle(
-              fontSize: 12,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-              color: selected ? AppColors.primary : AppColors.onSurface,
+              fontSize: selected ? 13 : 12,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              color: selected ? AppColors.primary : AppColors.onSurface.withValues(alpha: 0.7),
+              letterSpacing: selected ? 0.2 : 0,
             );
           }),
           iconTheme: WidgetStateProperty.resolveWith((states) {
             final selected = states.contains(WidgetState.selected);
             return IconThemeData(
-              color: selected ? AppColors.primary : AppColors.onSurface,
+              color: selected ? AppColors.primary : AppColors.onSurface.withValues(alpha: 0.7),
+              size: selected ? 32 : 28,
             );
           }),
         ),
@@ -80,20 +83,23 @@ class AppTheme {
           ),
         ),
         navigationBarTheme: NavigationBarThemeData(
+          height: 80,
           backgroundColor: AppColors.surfaceDark,
-          indicatorColor: AppColors.primaryLight.withValues(alpha: 0.25),
+          indicatorColor: AppColors.primaryLight.withValues(alpha: 0.2),
           labelTextStyle: WidgetStateProperty.resolveWith((states) {
             final selected = states.contains(WidgetState.selected);
             return TextStyle(
-              fontSize: 12,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-              color: selected ? AppColors.primaryLight : AppColors.onBackgroundDark,
+              fontSize: selected ? 13 : 12,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              color: selected ? AppColors.primaryLight : AppColors.onBackgroundDark.withValues(alpha: 0.7),
+              letterSpacing: selected ? 0.2 : 0,
             );
           }),
           iconTheme: WidgetStateProperty.resolveWith((states) {
             final selected = states.contains(WidgetState.selected);
             return IconThemeData(
-              color: selected ? AppColors.primaryLight : AppColors.onBackgroundDark,
+              color: selected ? AppColors.primaryLight : AppColors.onBackgroundDark.withValues(alpha: 0.7),
+              size: selected ? 32 : 28,
             );
           }),
         ),

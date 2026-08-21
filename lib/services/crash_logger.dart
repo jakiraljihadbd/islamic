@@ -39,6 +39,14 @@ class CrashLogger {
     });
   }
 
+  /// try/catch দিয়ে নিজে ধরা কোনো error কে crash log ফাইলে লেখার জন্য —
+  /// runZonedGuarded এর বাইরে থেকেও ব্যবহারযোগ্য (যেমন main.dart এর alarm-init
+  /// safety net, যেখানে error ধরে ফেলার পরও app চালিয়ে যেতে হয়, তাই এটা কোনো
+  /// uncaught error না)।
+  static void logCaught(String label, Object error, StackTrace stack) {
+    _write('$label: $error', stack);
+  }
+
   static void _write(String error, StackTrace? stack) {
     // ফাইলে লেখাটা fire-and-forget রাখা হচ্ছে, যাতে crash handling নিজেই
     // অ্যাপকে আরও ধীর/ব্লক না করে দেয়।

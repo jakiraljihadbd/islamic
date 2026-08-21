@@ -43,12 +43,20 @@ class _RootShellState extends State<RootShell> {
   static const _unselectedTint = Color(0xFF757575);
 
   Widget _navIcon(String asset, bool selected) {
-    return ColorFiltered(
-      colorFilter: ColorFilter.mode(
-        selected ? AppColors.primary : _unselectedTint,
-        BlendMode.srcIn,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: ColorFiltered(
+        colorFilter: ColorFilter.mode(
+          selected ? AppColors.primary : _unselectedTint,
+          BlendMode.srcIn,
+        ),
+        child: Image.asset(
+          asset,
+          width: 32,
+          height: 32,
+          filterQuality: FilterQuality.high,
+        ),
       ),
-      child: Image.asset(asset, width: 24, height: 24),
     );
   }
 
@@ -65,10 +73,17 @@ class _RootShellState extends State<RootShell> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(index: _index, children: _screens),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: _destinations,
+      bottomNavigationBar: Material(
+        elevation: 12,
+        color: Theme.of(context).colorScheme.surface,
+        child: SafeArea(
+          top: false,
+          child: NavigationBar(
+            selectedIndex: _index,
+            onDestinationSelected: (i) => setState(() => _index = i),
+            destinations: _destinations,
+          ),
+        ),
       ),
     );
   }

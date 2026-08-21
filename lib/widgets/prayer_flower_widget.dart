@@ -5,12 +5,38 @@ import 'package:geocoding/geocoding.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/prayer_time_service.dart';
 import '../services/alarm_service.dart';
+import '../services/alarm_reliability_service.dart';
 import '../theme/app_colors.dart';
+import 'alarm_reliability_dialog.dart';
 
-/// প্রার্থনা-ফুল উইজেট (7.2b) — ট্যাপ করলে সেই ওয়াক্তের নীল রঙের ফুলে
-/// স্পিন-অ্যানিমেশন দিয়ে বদলায় (২.৫ সেকেন্ড পর আবার বর্তমান ওয়াক্তের
-/// সবুজ ফুলে ফিরে আসে), আর active পাপড়ির চারপাশে bg_petal_active গ্রেডিয়েন্ট
-/// রিং হাইলাইট হয়।
+/// প্রার্থনা-ফুল উইজেট।
+///
+/// === নতুন পাপড়ি-সিস্টেম (worklist_home.txt #৩, এই সেশনে রিডিজাইন করা) ===
+/// আগে প্রতিটা ওয়াক্তের জন্য আলাদা পূর্ণাঙ্গ ফুল-ছবি ছিল (img_flower_{name}_green/
+/// blue.png — যেখানে একটামাত্র পাপড়ি রঙিন/হাইলাইট করা থাকত বাকিগুলো নিউট্রাল), আর
+/// প্রতিটা পাপড়ির আইকন একটা আলাদা সাদা/হালকা সার্কেল ব্যাজের ভেতরে বসানো থাকত।
+/// এখন থেকে মাত্র **একটাই নিউট্রাল ফুল-ছবি** (img_flower_neutral_light.png)
+/// ব্যবহার করা হয় — এর উপরেই ৬টা পাপড়ির প্রতিটার জায়গায় (মাপ নিচে ব্যাখ্যা করা
+/// আছে) সংশ্লিষ্ট আইকন সরাসরি বসানো হয় (কোনো সাদা সার্কেল/ব্যাজ ছাড়া), আর
+/// নাম+সময় পাপড়ির ঠিক মাঝ বরাবর align করা হয়। "সিলেক্ট স্টেট" এখন আর আলাদা
+/// ছবি বদলে না, শুধু বর্তমান/active ওয়াক্তের টেক্সট রঙ সবুজ (AppColors.primary)
+/// হয়ে বোঝানো হয় — বাকি সব পাপড়ির টেক্সট থিম-অনুযায়ী onSurface রঙে থাকে (এটাই
+/// ডার্ক-মোড ফিক্স, নিচে দেখুন)।
+///
+/// --- পাপড়ির জ্যামিতি (img_flower_neutral_light.png, 720x720 ক্যানভাস) ---
+/// ছবিটা পিক্সেল-অ্যানালাইসিস করে বের করা হয়েছে (প্রতিটা পাপড়ি-সার্কেলের bounding
+/// box মেপে):
+///   - ক্যানভাসের কেন্দ্র: (360, 360)
+///   - কেন্দ্র থেকে প্রতিটা পাপড়ির কেন্দ্র পর্যন্ত দূরত্ব (hex radius): ≈ 211px
+///     → অনুপাত হিসেবে 211/720 ≈ 0.2938 × ডিসপ্লে-সাইজ
+///   - প্রতিটা পাপড়ি-সার্কেলের ব্যাসার্ধ: ≈ 93px → 93/720 ≈ 0.1292 × ডিসপ্লে-সাইজ
+///   - ফজর ঠিক উপরে (12 টার কাঁটার পজিশন, 0°), তারপর ঘড়ির কাঁটার দিকে ৬০° পর পর:
+///     সূর্যোদয়(৬০°) → যোহর(১২০°) → আসর(১৮০°, একদম নিচে) → মাগরিব(২৪০°) →
+///     এশা(৩০০°) — এটাই আগের _hexOffset() ফাংশনের একই থিটা-ফর্মুলা, শুধু radius
+///     এখন উপরের নতুন অনুপাত থেকে ডিসপ্লে-সাইজ অনুযায়ী হিসাব হয়।
+/// এই দুটো অনুপাত (_kHexRadiusRatio, _kPetalRadiusRatio) ধ্রুবক রাখা হয়েছে যাতে
+/// ডিসপ্লে-সাইজ (রেসপনসিভ, স্ক্রিন-প্রস্থ অনুযায়ী) যতই বদলাক, আইকন+টেক্সট সবসময়
+/// আসল ছবির পাপড়ি-সার্কেলের ঠিক ভেতরেই/মাঝ বরাবর বসবে।
 class PrayerFlowerWidget extends StatefulWidget {
   final double lat;
   final double lng;
@@ -28,26 +54,28 @@ class PrayerFlowerWidget extends StatefulWidget {
 class _Petal {
   final String name;
   final String petalIcon;
-  final String flowerGreen;
-  final String flowerBlue;
   final DateTime time;
-  const _Petal(this.name, this.petalIcon, this.flowerGreen, this.flowerBlue, this.time);
+  const _Petal(this.name, this.petalIcon, this.time);
 }
 
 class _PrayerFlowerWidgetState extends State<PrayerFlowerWidget> {
   static const _defs = [
-    ('ফজর', 'ic_petal_fajr', 'img_flower_fajr'),
-    ('সূর্যোদয়', 'ic_petal_sunrise', 'img_flower_sunrise'),
-    ('যোহর', 'ic_petal_dhuhr', 'img_flower_dhuhr'),
-    ('আসর', 'ic_petal_asr', 'img_flower_asr'),
-    ('মাগরিব', 'ic_petal_maghrib', 'img_flower_maghrib'),
-    ('ইশা', 'ic_petal_isha', 'img_flower_isha'),
+    ('ফজর', 'ic_petal_fajr'),
+    ('সূর্যোদয়', 'ic_petal_sunrise'),
+    ('যোহর', 'ic_petal_dhuhr'),
+    ('আসর', 'ic_petal_asr'),
+    ('মাগরিব', 'ic_petal_maghrib'),
+    ('ইশা', 'ic_petal_isha'),
   ];
+
+  // === পাপড়ি জ্যামিতির ধ্রুবক (img_flower_neutral_light.png থেকে মাপা, উপরের
+  // ক্লাস-ডকে বিস্তারিত ব্যাখ্যা দেখুন) ===
+  static const double _kHexRadiusRatio = 0.2938;
+  static const double _kPetalRadiusRatio = 0.1292;
+  static const String _kFlowerAsset = 'assets/images/flower/img_flower_neutral_light.png';
 
   late List<_Petal> _petals;
   late int _activeIndex;
-  int? _selectedIndex;
-  String _currentFlower = 'assets/images/flower/img_flower_fajr_green.png';
   String? _locationName; // 10.2: lat/lng থেকে জেলা/শহরের নাম (geocoding দিয়ে)
   // 10.4: প্রতিটা পাপড়ির আলার্ম চালু/বন্ধ অবস্থা — prayer_screen.dart এর মতোই
   // SharedPreferences key 'alarm_enabled_$index' ব্যবহার করা হয় (index এখানে
@@ -109,11 +137,10 @@ class _PrayerFlowerWidgetState extends State<PrayerFlowerWidget> {
     final times = PrayerTimeService.calculate(latitude: widget.lat, longitude: widget.lng, date: now);
     final ordered = times.ordered; // ফজর, সূর্যোদয়, যোহর, আসর, মাগরিব, এশা (একই ক্রম _defs এর সাথে মিলে)
     _petals = List.generate(_defs.length, (i) {
-      final (name, petalIcon, flowerBase) = _defs[i];
-      return _Petal(name, petalIcon, '${flowerBase}_green', '${flowerBase}_blue', ordered[i].value);
+      final (name, petalIcon) = _defs[i];
+      return _Petal(name, petalIcon, ordered[i].value);
     });
     _activeIndex = _calcActiveIndex(now);
-    _currentFlower = 'assets/images/flower/${_petals[_activeIndex].flowerGreen}.png';
   }
 
   /// বর্তমান সময়ের আগের সর্বশেষ ওয়াক্ত-ই "active" (আসল PrayerTimeService এর
@@ -127,23 +154,11 @@ class _PrayerFlowerWidgetState extends State<PrayerFlowerWidget> {
     return active == -1 ? _petals.length - 1 : active;
   }
 
-  // 10.4: আগে ট্যাপে ২.৫ সেকেন্ডের SnackBar দেখাত, এখন বিস্তারিত পপ-আপ
-  // (bottom sheet) দেখায় — নাম, সময়, countdown ও আলার্ম টগল। পপ-আপ বন্ধ হলে
-  // (যেকোনো উপায়ে — টগল বাদেও) ফুল আবার বর্তমান ওয়াক্তের সবুজ ছবিতে ফিরে আসে।
-  Future<void> _onPetalTapped(int index) async {
-    if (_selectedIndex != index) {
-      setState(() {
-        _selectedIndex = index;
-        _currentFlower = 'assets/images/flower/${_petals[index].flowerBlue}.png';
-      });
-    }
-    await _showPetalSheet(index);
-    if (!mounted) return;
-    setState(() {
-      _selectedIndex = null;
-      _currentFlower = 'assets/images/flower/${_petals[_activeIndex].flowerGreen}.png';
-    });
-  }
+  // পাপড়িতে ট্যাপ করলে বিস্তারিত পপ-আপ (bottom sheet) দেখায় — নাম, সময়,
+  // countdown ও আলার্ম টগল। এখন আর ফুল-ছবি বদলায় না (একটাই নিউট্রাল ছবি সবসময়
+  // থাকে) — শুধু "বর্তমান ওয়াক্ত" (active) পাপড়ির টেক্সট সবুজ থাকে, ট্যাপ করাটা
+  // স্রেফ ডিটেইল শিট খোলে।
+  Future<void> _onPetalTapped(int index) => _showPetalSheet(index);
 
   Future<void> _showPetalSheet(int index) {
     return showModalBottomSheet<void>(
@@ -188,6 +203,9 @@ class _PrayerFlowerWidgetState extends State<PrayerFlowerWidget> {
           prayerName: petal.name,
           recurring: true,
         );
+        if (await AlarmReliabilityService.instance.shouldShowOnFirstAlarm() && mounted) {
+          await showAlarmReliabilityDialog(context);
+        }
       } else {
         await AlarmService.instance.cancelPrayer(id);
       }
@@ -199,22 +217,40 @@ class _PrayerFlowerWidgetState extends State<PrayerFlowerWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // থিম-অনুযায়ী বিসমিল্লাহ টেক্সট কালার — আগে ব্যাকগ্রাউন্ড গ্রেডিয়েন্ট বক্স
+    // থাকায় সবসময় উজ্জ্বল সোনালী রঙ ব্যবহার করা যেত (worklist_home #২: বাদ
+    // দেওয়া হয়েছে), এখন ফ্রেমটা সরাসরি স্ক্রিনের নিজস্ব ব্যাকগ্রাউন্ডের উপর
+    // বসে বলে লাইট মোডে হালকা ব্যাকগ্রাউন্ডে উজ্জ্বল সোনালী রঙ প্রায় দেখাই যায়
+    // না — তাই লাইট মোডে গাঢ় ব্রোঞ্জ/সোনালী আর ডার্ক মোডে উজ্জ্বল সোনালী।
+    const arabicColorDark = Color(0xFFFFD700);
+    const arabicColorLight = Color(0xFF8A6A00);
+    const subColorDark = Color(0xFFFFE97A);
+    const subColorLight = Color(0xFF6B5300);
+    final arabicColor = isDark ? arabicColorDark : arabicColorLight;
+    final subColor = isDark ? subColorDark : subColorLight;
+    final arabicShadow = isDark ? const Color(0xFF8B6914) : const Color(0xFFFFF3C4);
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // বিসমিল্লাহ ব্যানার — img_bismi_frame.png কে হেডারের background হিসেবে
-        // ব্যবহার করা হয়েছে (10.2 বাগ-ফিক্স): আগে এই ইমেজ ভুলভাবে নিচের ফুল-স্ট্যাকের
-        // মাঝখানে ১৬০x১৬০ বর্গক্ষেত্রে বসানো ছিল, কিন্তু আসল ইমেজটা একটা চওড়া
-        // (১১৬৭x৩৫০) আয়তক্ষেত্রাকার ডেকোরেটিভ বর্ডার/ব্যানার — বর্গক্ষেত্রে জোর করে
-        // বসানোয় সেটা চেপে/বিকৃত হয়ে দেখাত। মূল Java লেআউটেও (fragment_home.xml)
-        // এই ইমেজ পুরো হেডার চওড়া জুড়ে fitXY দিয়ে stretch করা ছিল, ছোট আইকন হিসেবে না —
-        // এখন সেভাবেই বসানো হয়েছে।
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            width: double.infinity,
-            height: 92,
-            decoration: const BoxDecoration(gradient: AppColors.headerGradient),
+        // === বিসমিল্লাহ ফ্রেম — worklist_home.txt #২ (এই সেশনে ৩ ধাপ সম্পন্ন) ===
+        // ১) উপরে-নিচের মার্জিন/প্যাডিং কমানো হয়েছে (আরও কম্প্যাক্ট)
+        // ২) ফুল-উইথ: প্যারেন্ট (home_screen.dart এর SliverPadding) থেকে আসা
+        //    ২০px হরাইজন্টাল প্যাডিং negative margin দিয়ে ভেঙে বের করা হয়েছে,
+        //    যাতে ফ্রেমটা স্ক্রিনের দুই এজ পর্যন্ত পুরো প্রশস্ত হয়। এই ২০ ভ্যালু
+        //    home_screen.dart-এর SliverPadding(horizontal: 20)-এর সাথে মিলিয়ে
+        //    রাখা হয়েছে — ওখানে বদলালে এখানেও বদলাতে হবে।
+        // ৩) bg remove: আগের গ্রেডিয়েন্ট Container ব্যাকগ্রাউন্ড বক্স (ClipRRect+
+        //    decoration) সম্পূর্ণ বাদ দেওয়া হয়েছে — এখন শুধু PNG ফ্রেম-আর্ট আর
+        //    টেক্সট সরাসরি হোম স্ক্রিনের নিজস্ব ব্যাকগ্রাউন্ডের উপর ভাসে, কোনো
+        //    বক্স/প্যানেল নেই। ছবিটার আসল অনুপাত (1167×350) অনুযায়ী AspectRatio
+        //    ব্যবহার করা হয়েছে (আগে BoxFit.fill + fixed height:92 ছবিটাকে
+        //    স্ট্রেচ করে বিকৃত করে দিত)।
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: -20),
+          child: AspectRatio(
+            aspectRatio: 1167 / 350,
             child: Stack(
               fit: StackFit.expand,
               children: [
@@ -224,53 +260,30 @@ class _PrayerFlowerWidgetState extends State<PrayerFlowerWidget> {
                   errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 44, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 44, vertical: 2),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      if (_locationName != null) ...[
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.location_on_outlined,
-                              size: 11,
-                              color: Color(0xFFFFE97A),
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              _locationName!,
-                              style: const TextStyle(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w400,
-                                color: Color(0xFFFFE97A),
-                                letterSpacing: 0.2,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 3),
-                      ],
-                      const Text(
+                      Text(
                         'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
                         style: TextStyle(
                           fontFamily: 'Arabic',
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
-                          height: 1.4,
-                          color: Color(0xFFFFD700),
-                          shadows: [Shadow(color: Color(0xFF8B6914), offset: Offset(1, 1), blurRadius: 3)],
+                          height: 1.3,
+                          color: arabicColor,
+                          shadows: [Shadow(color: arabicShadow, offset: const Offset(1, 1), blurRadius: 3)],
                         ),
                         textAlign: TextAlign.center,
                         textDirection: TextDirection.rtl,
                       ),
-                      const SizedBox(height: 3),
-                      const Text(
+                      const SizedBox(height: 2),
+                      Text(
                         'বিসমিল্লাহি আর-রাহমানি আর-রাহিম',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w400,
-                          color: Color(0xFFFFE97A),
+                          color: subColor,
                           letterSpacing: 0.3,
                         ),
                         textAlign: TextAlign.center,
@@ -282,141 +295,168 @@ class _PrayerFlowerWidgetState extends State<PrayerFlowerWidget> {
             ),
           ),
         ),
-        const SizedBox(height: 14),
-        // ৬টা পাপড়ির ফুল (10.3: সূর্যোদয় ফিরিয়ে আনা হয়েছে, সমান ৬০° কোণে হেক্সাগন বিন্যাস)
-        Center(
-          child: SizedBox(
-            width: 320,
-            height: 320,
-            child: Stack(
-              children: [
-                // active/tapped ওয়াক্ত অনুযায়ী সবুজ/নীল ফুল — স্পিন+স্কেল অ্যানিমেশন
-                Positioned(
-                  left: 20,
-                  top: 20,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    transitionBuilder: (child, animation) => RotationTransition(
-                      turns: Tween<double>(begin: 0.5, end: 1.0).animate(animation),
-                      child: ScaleTransition(
-                        scale: Tween<double>(begin: 0.92, end: 1.0).animate(animation),
-                        child: child,
+        // লোকেশন — ইউজারের হাতে আঁকা রেফারেন্স ডেমো (IMG_20260820_083202_496.jpg)
+        // অনুযায়ী এখন বিসমিল্লাহ ফ্রেমের ভিতরে না, ফ্রেমের ঠিক নিচে আলাদা লাইনে
+        // (আগে ফ্রেমের ভিতরে টেক্সটের উপরে ছিল)।
+        if (_locationName != null) ...[
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.location_on_outlined,
+                size: 12,
+                color: subColor,
+              ),
+              const SizedBox(width: 3),
+              Text(
+                _locationName!,
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w400,
+                  color: subColor,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
+          ),
+        ],
+        const SizedBox(height: 8),
+        // === পাপড়ি (ফুল) সেকশন — worklist_home.txt #৩ রিডিজাইন ===
+        // LayoutBuilder দিয়ে available width অনুযায়ী রেসপনসিভ সাইজ (আগে ছিল
+        // hardcoded 320x320 বক্সে 280x280 ছবি — এখন পুরো available width টাই
+        // ব্যবহার হয়, ফলে ছবি ও পাপড়ি দুটোই আগের চেয়ে লক্ষণীয়ভাবে বড় দেখায়,
+        // ছোট স্ক্রিনেও ভাঙবে না কারণ radius/font সবকিছু displaySize থেকে হিসাব)।
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final displaySize = constraints.maxWidth.clamp(260.0, 440.0);
+            final hexRadius = displaySize * _kHexRadiusRatio;
+            final petalRadius = displaySize * _kPetalRadiusRatio;
+            return Center(
+              child: SizedBox(
+                width: displaySize,
+                height: displaySize,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: Image.asset(
+                        _kFlowerAsset,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
                       ),
                     ),
-                    child: Image.asset(
-                      _currentFlower,
-                      key: ValueKey(_currentFlower),
-                      width: 280,
-                      height: 280,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
-                        // ইমেজ না পেলে fallback (ফজর সবুজ)
-                        return Image.asset(
-                          'assets/images/flower/img_flower_fajr_green.png',
-                          width: 280,
-                          height: 280,
-                          fit: BoxFit.contain,
-                        );
-                      },
-                    ),
-                  ),
+                    for (int i = 0; i < _petals.length; i++)
+                      _petalContent(
+                        context,
+                        index: i,
+                        offset: _hexOffset(i, hexRadius),
+                        displaySize: displaySize,
+                        petalRadius: petalRadius,
+                      ),
+                  ],
                 ),
-                // ৬টা পেটাল — কেন্দ্র (160,160) থেকে সমান ব্যাসার্ধে ৬০° পর পর
-                for (int i = 0; i < _petals.length; i++) _petalPosition(i, _hexOffset(i)),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         ),
       ],
     );
   }
 
   /// index অনুযায়ী কেন্দ্র থেকে (offsetX, offsetY) — ফজর সবচেয়ে উপরে, তারপর
-  /// ঘড়ির কাঁটার দিকে (clockwise) প্রতি পাপড়ি ৬০° পর পর, মোট ৬টা সমদূরত্বে।
-  Offset _hexOffset(int index) {
-    const radius = 125.0;
+  /// ঘড়ির কাঁটার দিকে (clockwise) প্রতি পাপড়ি ৬০° পর পর, মোট ৬টা সমদূরত্বে —
+  /// img_flower_neutral_light.png-এর আসল পাপড়ি-বিন্যাসের সাথে হুবহু মিলিয়ে।
+  Offset _hexOffset(int index, double radius) {
     final theta = (index * 60) * (math.pi / 180.0);
     final dx = radius * math.sin(theta);
     final dy = -radius * math.cos(theta);
     return Offset(dx, dy);
   }
 
-  Widget _petalPosition(int index, Offset offset) {
+  /// একটা পাপড়ির ভেতরে (কোনো সাদা সার্কেল/ব্যাজ ছাড়া) সরাসরি: আইকন → নাম →
+  /// (ঘড়ি-আইকন + সময়) — সব মিলিয়ে পাপড়ি-সার্কেলের ঠিক জ্যামিতিক কেন্দ্রে align।
+  Widget _petalContent(
+    BuildContext context, {
+    required int index,
+    required Offset offset,
+    required double displaySize,
+    required double petalRadius,
+  }) {
     final petal = _petals[index];
-    final isActive = index == (_selectedIndex ?? _activeIndex);
-    // কেন্দ্র (160,160) — SizedBox 320x320 এর মাঝখান, পাপড়ি সার্কেল (60x60 → half 30)
-    // বাদ দিয়ে বসানো হয় যাতে অফসেট থেকে ঠিক কেন্দ্রবিন্দুতে align হয়।
+    final isActive = index == _activeIndex;
+    final center = displaySize / 2;
+    final petalDiameter = petalRadius * 2;
+
+    // ডার্ক-মোড ফিক্স: আগে static AppColors.onSurface (সবসময় গাঢ় রঙ, #13241C)
+    // সরাসরি ব্যবহার হতো — ডার্ক থিমে ব্যাকগ্রাউন্ড গাঢ় হয়ে গেলেও টেক্সট গাঢ়ই
+    // থেকে যেত, ফলে অদৃশ্য/অপঠনযোগ্য হয়ে যেত। এখন Theme.of(context) থেকে
+    // থিম-অনুযায়ী onSurface রঙ নেওয়া হচ্ছে (light থিমে গাঢ়, dark থিমে হালকা)।
+    final baseTextColor = Theme.of(context).colorScheme.onSurface;
+    // "সিলেক্ট স্টেট" — একমাত্র বর্তমান/active ওয়াক্তের টেক্সট সবুজ (AppColors.primary)।
+    final textColor = isActive ? AppColors.primary : baseTextColor.withValues(alpha: 0.82);
+
+    final iconSize = (displaySize * 0.078).clamp(22.0, 34.0);
+    final nameFontSize = (displaySize * 0.0245).clamp(9.0, 13.5);
+    final timeFontSize = (displaySize * 0.0275).clamp(10.0, 15.0);
+    final clockIconSize = (displaySize * 0.021).clamp(7.5, 11.0);
+
     return Positioned(
-      left: 160 + offset.dx - 32,
-      top: 160 + offset.dy - 32,
+      left: center + offset.dx - petalRadius,
+      top: center + offset.dy - petalRadius,
+      width: petalDiameter,
+      height: petalDiameter,
       child: GestureDetector(
         onTap: () => _onPetalTapped(index),
         behavior: HitTestBehavior.opaque,
-        child: SizedBox(
-          width: 64,
+        child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: isActive ? AppColors.petalActiveGradient : null,
-                  color: isActive ? null : Colors.white,
-                  border: isActive ? null : Border.all(color: AppColors.primary.withValues(alpha: 0.15), width: 1),
-                  boxShadow: [
-                    BoxShadow(
-                      color: isActive
-                          ? AppColors.success.withValues(alpha: 0.35)
-                          : Colors.black.withValues(alpha: 0.06),
-                      blurRadius: isActive ? 12 : 6,
-                      spreadRadius: isActive ? 1 : 0,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Image.asset(
-                    'assets/images/flower/${petal.petalIcon}.png',
-                    width: 32,
-                    height: 32,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      // পেটাল আইকন না পেলে সিম্পল সার্কেল আইকন দেখাও
-                      return Icon(
-                        Icons.circle_outlined,
-                        size: 32,
-                        color: isActive ? Colors.white : AppColors.primary,
-                      );
-                    },
-                  ),
+              // আইকন সরাসরি পাপড়ির ভেতরে, কোনো সাদা সার্কেল ব্যাকগ্রাউন্ড ছাড়া
+              Image.asset(
+                'assets/images/flower/${petal.petalIcon}.png',
+                width: iconSize,
+                height: iconSize,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => Icon(
+                  Icons.circle_outlined,
+                  size: iconSize,
+                  color: textColor,
                 ),
               ),
-              const SizedBox(height: 5),
-              // নাম হালকা ওয়েট
+              SizedBox(height: displaySize * 0.008),
               Text(
                 petal.name,
                 style: TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w400,
-                  color: isActive ? AppColors.primary : AppColors.onSurface.withValues(alpha: 0.7),
+                  fontSize: nameFontSize,
+                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                  color: textColor,
                   letterSpacing: 0.1,
                 ),
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              // সময় — শুধু এটাই bold
-              Text(
-                TimeOfDay.fromDateTime(petal.time).format(context),
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w700,
-                  color: isActive ? AppColors.primary : AppColors.onSurface,
-                ),
-                textAlign: TextAlign.center,
+              SizedBox(height: displaySize * 0.004),
+              // সময়ের লেখার আগে ছোট ঘড়ি আইকন
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.access_time_rounded, size: clockIconSize, color: textColor.withValues(alpha: 0.75)),
+                  SizedBox(width: displaySize * 0.006),
+                  Text(
+                    TimeOfDay.fromDateTime(petal.time).format(context),
+                    style: TextStyle(
+                      fontSize: timeFontSize,
+                      fontWeight: FontWeight.w700,
+                      color: textColor,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ],
           ),
@@ -468,6 +508,8 @@ class _PetalDetailSheetState extends State<_PetalDetailSheet> {
     final now = DateTime.now();
     final isPast = petal.time.isBefore(now);
     final remaining = isPast ? Duration.zero : petal.time.difference(now);
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final surface = Theme.of(context).colorScheme.surface;
 
     return SafeArea(
       top: false,
@@ -475,7 +517,7 @@ class _PetalDetailSheetState extends State<_PetalDetailSheet> {
         margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
         padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: surface,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 20, offset: const Offset(0, -4)),
@@ -513,7 +555,7 @@ class _PetalDetailSheetState extends State<_PetalDetailSheet> {
             const SizedBox(height: 12),
             Text(
               petal.name,
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500, color: AppColors.onSurface),
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, color: onSurface),
             ),
             const SizedBox(height: 4),
             Text(
@@ -526,7 +568,7 @@ class _PetalDetailSheetState extends State<_PetalDetailSheet> {
               style: TextStyle(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w400,
-                color: AppColors.onSurface.withValues(alpha: 0.6),
+                color: onSurface.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(height: 18),
@@ -536,10 +578,10 @@ class _PetalDetailSheetState extends State<_PetalDetailSheet> {
               children: [
                 const Icon(Icons.notifications_active_outlined, size: 20, color: AppColors.primary),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'আলার্ম',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: AppColors.onSurface),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: onSurface),
                   ),
                 ),
                 Switch(

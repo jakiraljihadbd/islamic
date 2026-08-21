@@ -2,7 +2,7 @@
 name: islamic_zone
 description: "IslamicZone - Prayer times, Quran, Dua, Tasbih & Qibla"
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.0+2
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -53,6 +53,15 @@ dependencies:
   # অ্যাপ ক্র্যাশ হলে কারণ ফাইলে লিখে রাখার জন্য
   path_provider: ^2.1.4
 
+  # alarm reliability: ফোনের ব্র্যান্ড/ম্যানুফ্যাকচারার শনাক্ত করার জন্য (Xiaomi,
+  # Oppo, Vivo, Huawei ইত্যাদি প্রতিটার নিজস্ব "autostart" সেটিংস আলাদা জায়গায়)
+  device_info_plus: ^11.2.0
+
+  # alarm reliability: OEM-specific autostart/background-permission settings
+  # স্ক্রিনে সরাসরি নিয়ে যাওয়ার জন্য (এগুলো standard Android settings action
+  # দিয়ে খোলা যায় না, প্রতিটা manufacturer এর নিজস্ব activity লাগে)
+  android_intent_plus: ^5.2.0
+
   # lat/lng থেকে জেলা/শহরের নাম বের করার জন্য (10.2, বিসমিল্লাহ ফ্রেমে লোকেশন দেখাতে)
   geocoding: ^3.0.0
 
@@ -98,6 +107,7 @@ flutter:
     - assets/images/menu/
     - assets/images/nav/
     - assets/images/qibla/
+    - assets/images/prayer_scenes/
     - assets/data/
     - assets/icon/
     - assets/azan.mp3
